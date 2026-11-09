@@ -1,7 +1,11 @@
 """Short natural-language infraction descriptions with a vision-language model.
 
 The model (Idefics2-8b by default) is loaded lazily on first use, so the app
-and the headless analysis can run without it (``--no-vlm``).
+and the headless analysis can run without it (``--no-vlm``). Any model
+supported by ``AutoModelForImageTextToText`` can be selected with
+``--vlm-model``, e.g. the CPU-friendly ``HuggingFaceTB/SmolVLM-500M-Instruct``.
+When the processor has a chat template it is used to build the prompt;
+otherwise an Idefics2-style ``User: <image> ...`` prompt is used.
 """
 
 import logging
@@ -11,11 +15,30 @@ from .config import VLMConfig
 
 logger = logging.getLogger(__name__)
 
-PROMPT_TEMPLATE = (
-    "User: <image> Analyze this industrial worker. The detection system flagged the "
-    "following missing PPE: {ppes}. Confirm or explain this safety infraction briefly "
-    "in one direct sentence.\nAssistant:"
+#: Instruction sent with the person crop; ``{ppes}`` is the list of flagged labels.
+PROMPT_TEXT = (
+    "This is a cropped image of an industrial worker. The detection system flagged the "
+    "following missing PPE: {ppes}. Double-check the image and answer in one short "
+    "sentence whether you confirm the missing PPE or not."
 )
+
+#: Idefics2-style prompt used when the processor has no chat template.
+PROMPT_TEMPLATE = "User: <image> " + PROMPT_TEXT + "\nAssistant:"
+
+
+def clean_answer(text: str) -> str:
+    """Strip whitespace and any ``Assistant:`` prefix from generated text.
+
+    Args:
+        text: Decoded model output.
+
+    Returns:
+        The answer without role prefixes.
+    """
+    text = text.strip()
+    if "Assistant:" in text:
+        text = text.split("Assistant:")[-1].strip()
+    return text
 
 
 def fallback_description(missing_ppes: Sequence[str]) -> str:
@@ -84,6 +107,23 @@ class VLMReporter:
                 "check available memory and network access, or run with --no-vlm."
             ) from exc
 
+    def _build_prompt(self, ppes: str) -> str:
+        """Build the text prompt, with the processor's chat template when it has one.
+
+        Args:
+            ppes: Comma-separated infraction labels.
+
+        Returns:
+            The prompt string containing one image placeholder.
+        """
+        if getattr(self._processor, "chat_template", None):
+            messages = [{"role": "user", "content": [
+                {"type": "image"},
+                {"type": "text", "text": PROMPT_TEXT.format(ppes=ppes)},
+            ]}]
+            return self._processor.apply_chat_template(messages, add_generation_prompt=True)
+        return PROMPT_TEMPLATE.format(ppes=ppes)
+
     def describe(self, crop_bgr: Any, missing_ppes: Sequence[str]) -> str:
         """Generate a one-sentence description of a person's infractions.
 
@@ -103,7 +143,7 @@ class VLMReporter:
 
         from .drawing import bgr_to_pil
 
-        prompt = PROMPT_TEMPLATE.format(ppes=", ".join(missing_ppes))
+        prompt = self._build_prompt(", ".join(missing_ppes))
         inputs = self._processor(
             text=[prompt], images=[bgr_to_pil(crop_bgr)], padding=True, return_tensors="pt"
         )
@@ -120,9 +160,7 @@ class VLMReporter:
                 pad_token_id=tokenizer.pad_token_id,
             )
         generated = output[0][inputs["input_ids"].shape[1]:]
-        text = self._processor.decode(generated, skip_special_tokens=True).strip()
-        if "Assistant:" in text:
-            text = text.split("Assistant:")[-1].strip()
+        text = clean_answer(self._processor.decode(generated, skip_special_tokens=True))
         if len(text) < 3:
             return fallback_description(missing_ppes)
         return text

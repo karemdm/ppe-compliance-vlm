@@ -96,6 +96,12 @@ Use `--no-vlm` to run the detection pipeline without it. The PPE weights
 are bundled in `weights/`; the first run with the VLM downloads it from
 Hugging Face.
 
+**CPU-only machines:** select the smaller
+[SmolVLM-500M-Instruct](https://huggingface.co/HuggingFaceTB/SmolVLM-500M-Instruct)
+with `--vlm-model HuggingFaceTB/SmolVLM-500M-Instruct` (about 2 GB in fp32;
+it may also need `pip install num2words`). It is much smaller than
+Idefics2-8b, so its answers are less reliable.
+
 ## Results
 
 Example run on [`samples/ppe_demo_input.mp4`](samples/README.md) (six real-time Pexels clips:
@@ -119,6 +125,30 @@ Observations from this run (qualitative, not a validated evaluation):
 - Compliant worker (hardhat + vest, back view): stays green.
 - Lumber warehouse: the workers are small and far; their boxes stay gray (not enough evidence) instead of guessing.
 - Tracker ID switches still inflate the per-person count.
+
+### Demo video
+
+[`results/demo_vlm_doublecheck.mp4`](results/demo_vlm_doublecheck.mp4) (720p, 62.5 s, no audio)
+shows the first 20 s of `samples/construction_site.mp4` followed by `samples/compliant_worker.mp4`,
+processed with the default `safetyvision` model and temporal rule, plus a VLM double-check with
+`HuggingFaceTB/SmolVLM-500M-Instruct` on CPU. The first time a person is confirmed as a violation
+(up to 3 persons, at least 3 s apart, box at least 150 px tall), playback **freezes**: the frame is
+darkened, the person is highlighted in yellow, and a side panel shows the enlarged crop, the
+confirmed violations and an "Analyzing..." counter while SmolVLM really runs on the crop. The
+counter shows the real elapsed time, but the wait is shortened to 4 s of video. The answer is
+then shown for 3 s and playback resumes. Each check (track id, violations, elapsed seconds,
+answer) is logged in [`results/demo_vlm_doublecheck.json`](results/demo_vlm_doublecheck.json).
+In this run all three checks were `NO-Safety Vest` on the construction site and took 15–21 s each
+on CPU. The answers were short agreements ("Yes.", "No safety vest found.", "No safety vest
+present."). The prompt names the flagged label, so these answers are not independent evidence.
+
+```bash
+# build the 1080p30 input (first 20 s of the construction site + the compliant worker)
+ffmpeg -t 20 -i samples/construction_site.mp4 -i samples/compliant_worker.mp4 \
+    -filter_complex "[0:v][1:v]concat=n=2:v=1:a=0[v]" -map "[v]" -c:v libx264 -crf 18 -an outputs/demo_input.mp4
+PYTHONPATH=src python scripts/make_demo_video.py --input outputs/demo_input.mp4 \
+    --vlm-model HuggingFaceTB/SmolVLM-500M-Instruct --ffmpeg ffmpeg
+```
 
 ## Usage
 
@@ -238,6 +268,7 @@ ppe-compliance-vlm/
     vlm.py          # VLMReporter (lazy Idefics2 loading)
     models.py       # PPE model registry and paired class mapping (stdlib)
     config.py       # dataclass defaults and path helpers (stdlib)
+  scripts/make_demo_video.py  # renders the demo video with VLM double-check freezes
   tests/            # tests for the pure-logic modules
   weights/          # yolov8n.pt, safetyvision_v2_yolov8s.pt, chd_yolo26l.pt + README
 ```
@@ -310,7 +341,10 @@ PPE models is ignored.
 - [Ultralytics YOLO](https://github.com/ultralytics/ultralytics) (YOLOv8,
   YOLO26) and its ByteTrack integration — AGPL-3.0.
 - [Idefics2-8b](https://huggingface.co/HuggingFaceM4/idefics2-8b) by Hugging
-  Face — Apache-2.0.
+  Face — Apache-2.0 (default VLM).
+- [SmolVLM-500M-Instruct](https://huggingface.co/HuggingFaceTB/SmolVLM-500M-Instruct)
+  by Hugging Face — Apache-2.0 (CPU-friendly option via `--vlm-model`; used
+  in the demo video).
 
 See [weights/README.md](weights/README.md) for files, sizes and checksums.
 

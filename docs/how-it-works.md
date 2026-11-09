@@ -197,14 +197,20 @@ with that filter.
 ## 6. VLM report
 
 For each reported person, the latest crop and the kept labels are sent to
-`HuggingFaceM4/idefics2-8b` with the prompt:
+`HuggingFaceM4/idefics2-8b` (or the model given with `--vlm-model`, e.g.
+`HuggingFaceTB/SmolVLM-500M-Instruct` on CPU) with the instruction:
 
 ```
-User: <image> Analyze this industrial worker. The detection system flagged the
-following missing PPE: {labels}. Confirm or explain this safety infraction
-briefly in one direct sentence.
-Assistant:
+This is a cropped image of an industrial worker. The detection system flagged
+the following missing PPE: {labels}. Double-check the image and answer in one
+short sentence whether you confirm the missing PPE or not.
 ```
+
+If the processor has a chat template, the prompt is built with
+`apply_chat_template` from one user message holding the image and this text,
+with the generation prompt appended. Otherwise the Idefics2-style string
+`User: <image> {instruction}\nAssistant:` is used. Only the newly generated
+tokens are decoded, and any `Assistant:` prefix is removed.
 
 Decoding is greedy (`do_sample=False`, `num_beams=1`), `max_new_tokens=60`,
 `repetition_penalty=1.5`. If the output is shorter than 3 characters, a
