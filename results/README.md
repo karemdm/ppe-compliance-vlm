@@ -15,6 +15,12 @@ Person boxes: gray while checking, green when compliant, red with the confirmed 
 | [`warehouse_aisle.mp4`](../samples/warehouse_aisle.mp4) | [`warehouse_aisle_annotated.mp4`](warehouse_aisle_annotated.mp4) | [`warehouse_aisle_report.json`](warehouse_aisle_report.json) | 3 IDs: 3 × NO-Safety Vest, 2 × NO-Hardhat, 2 × NO-Goggles |
 | [`compliant_worker.mp4`](../samples/compliant_worker.mp4) | [`compliant_worker_annotated.mp4`](compliant_worker_annotated.mp4) | [`compliant_worker_report.json`](compliant_worker_report.json) | none (worker wears hardhat and vest) |
 
+## VLM double-check demo
+
+[`demo_vlm_doublecheck.mp4`](demo_vlm_doublecheck.mp4) (62 s, 720p) and [`demo_vlm_doublecheck.json`](demo_vlm_doublecheck.json):
+construction site + compliant worker, with three SmolVLM-500M double-checks (the video freezes while the VLM runs;
+waits are shortened, real times are shown and logged). Built with `scripts/make_demo_video.py`.
+
 ## Combined run
 
 [`ppe_demo_safetyvision.mp4`](ppe_demo_safetyvision.mp4) and [`report_safetyvision.json`](report_safetyvision.json):
