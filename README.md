@@ -68,6 +68,22 @@ Use `--no-vlm` to run the detection pipeline without it. The PPE weights
 are bundled in `weights/`; the first run with the VLM downloads it from
 Hugging Face.
 
+## Results
+
+Example run on [`samples/ppe_demo_input_30s.mp4`](samples/README.md) (two Pexels clips, 913 frames)
+with the default `safetyvision` model, `--no-vlm`, on CPU (about 5 minutes):
+
+| File | Content |
+|---|---|
+| [`results/ppe_demo_safetyvision.mp4`](results/ppe_demo_safetyvision.mp4) | Annotated video (720p): person boxes in red when an infraction is associated, PPE items in green, infractions in red. |
+| [`results/report_safetyvision.json`](results/report_safetyvision.json) | Consolidated report: 46 tracked IDs with infractions (45 × NO-Safety Vest, 5 × NO-Hardhat, 2 × NO-Goggles). |
+
+Observations from this run (qualitative, not a validated evaluation):
+
+- Hardhats and missing vests on the construction site are picked up on most workers.
+- In the warehouse clip one worker without a hardhat is not flagged, and a shelf in the foreground is detected as a person.
+- The number of IDs (46) is about twice the number of people: the tracker switches IDs in the crowded scene, so per-person counts are inflated.
+
 ## Usage
 
 ### Streamlit app
