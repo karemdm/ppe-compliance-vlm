@@ -14,3 +14,18 @@ The author of the 4281405 clip could not be confirmed automatically (the Pexels 
 
 PPE per worker is a visual estimate made while selecting the clips (with AI assistance), not ground truth.
 The clips are used only to illustrate the method. Detections produced on them are model outputs, not a judgement about the people shown.
+
+## Individual clips
+
+The same sources are also provided as separate files (1920x1080, 30 fps, H.264, no audio), processed one by one in
+[`results/`](../results/README.md):
+
+| File | Source (see table above) | Duration |
+|---|---|---|
+| `construction_site.mp4` | Pexels 14117667, first 20 s | 20 s |
+| `industrial_structure.mp4` | Pexels 8964379 | ~8 s |
+| `carpenters.mp4` | [Pexels 8965388](https://www.pexels.com/video/a-man-carrying-planks-of-wood-8965388/) by Mikael Blomkvist — two workers with hardhats and no vest; one wears a mask and gloves | ~13.5 s |
+| `warehouse_aisle.mp4` | Pexels 4281405 | ~10 s |
+| `compliant_worker.mp4` | [Pexels 5423610](https://www.pexels.com/video/5423610/) — one worker with hardhat and vest, back view | ~16 s |
+
+The lumber-warehouse segment is only part of the combined `ppe_demo_input.mp4` (not provided separately).

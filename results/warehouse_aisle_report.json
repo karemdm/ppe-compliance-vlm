@@ -1,0 +1,76 @@
+{
+  "input": "samples/warehouse_aisle.mp4",
+  "frames_processed": 305,
+  "monitored_infractions": [
+    "no-hardhat",
+    "no-safety vest",
+    "no-gloves",
+    "no-goggles",
+    "no-mask",
+    "no_harness",
+    "fall-detected"
+  ],
+  "settings": {
+    "ppe_model": "safetyvision",
+    "tracker": "bytetrack.yaml",
+    "min_appearances": 3,
+    "min_ratio": 0.1,
+    "ppe_conf": 0.15,
+    "temporal": {
+      "window_seconds": 3.0,
+      "min_majority": 0.6,
+      "min_coverage": 0.3,
+      "lost_seconds": 2.0,
+      "min_frames": 5
+    }
+  },
+  "persons_with_infractions": 3,
+  "total_consolidated_infractions": 7,
+  "persons": [
+    {
+      "person_id": 1,
+      "appearances": 100,
+      "infractions": [
+        "NO-Safety Vest",
+        "NO-Goggles"
+      ],
+      "infraction_counts": {
+        "NO-Safety Vest": 100,
+        "NO-Goggles": 62
+      },
+      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest, NO-Goggles.",
+      "description_source": "template"
+    },
+    {
+      "person_id": 2,
+      "appearances": 96,
+      "infractions": [
+        "NO-Goggles",
+        "NO-Hardhat",
+        "NO-Safety Vest"
+      ],
+      "infraction_counts": {
+        "NO-Goggles": 96,
+        "NO-Hardhat": 71,
+        "NO-Safety Vest": 51
+      },
+      "description": "Worker operating without the following mandatory safety items: NO-Goggles, NO-Hardhat, NO-Safety Vest.",
+      "description_source": "template"
+    },
+    {
+      "person_id": 3,
+      "appearances": 112,
+      "infractions": [
+        "NO-Hardhat",
+        "NO-Safety Vest"
+      ],
+      "infraction_counts": {
+        "NO-Hardhat": 26,
+        "NO-Safety Vest": 112
+      },
+      "description": "Worker operating without the following mandatory safety items: NO-Hardhat, NO-Safety Vest.",
+      "description_source": "template"
+    }
+  ],
+  "note": "Model outputs; human review required before any decision."
+}

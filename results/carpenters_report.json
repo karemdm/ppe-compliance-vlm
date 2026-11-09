@@ -1,0 +1,68 @@
+{
+  "input": "samples/carpenters.mp4",
+  "frames_processed": 406,
+  "monitored_infractions": [
+    "no-hardhat",
+    "no-safety vest",
+    "no-gloves",
+    "no-goggles",
+    "no-mask",
+    "no_harness",
+    "fall-detected"
+  ],
+  "settings": {
+    "ppe_model": "safetyvision",
+    "tracker": "bytetrack.yaml",
+    "min_appearances": 3,
+    "min_ratio": 0.1,
+    "ppe_conf": 0.15,
+    "temporal": {
+      "window_seconds": 3.0,
+      "min_majority": 0.6,
+      "min_coverage": 0.3,
+      "lost_seconds": 2.0,
+      "min_frames": 5
+    }
+  },
+  "persons_with_infractions": 3,
+  "total_consolidated_infractions": 3,
+  "persons": [
+    {
+      "person_id": 1,
+      "appearances": 56,
+      "infractions": [
+        "NO-Safety Vest"
+      ],
+      "infraction_counts": {
+        "NO-Safety Vest": 56
+      },
+      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
+      "description_source": "template"
+    },
+    {
+      "person_id": 3,
+      "appearances": 268,
+      "infractions": [
+        "NO-Safety Vest"
+      ],
+      "infraction_counts": {
+        "NO-Safety Vest": 268
+      },
+      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
+      "description_source": "template"
+    },
+    {
+      "person_id": 5,
+      "appearances": 143,
+      "infractions": [
+        "NO-Safety Vest"
+      ],
+      "infraction_counts": {
+        "NO-Safety Vest": 143
+      },
+      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
+      "description_source": "template"
+    }
+  ],
+  "note": "Model outputs; human review required before any decision."
+}
