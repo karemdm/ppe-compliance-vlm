@@ -5,7 +5,7 @@ from ppe_compliance.config import DetectorConfig, ReportConfig, resolve_tracker
 
 def test_defaults_match_prototype() -> None:
     d, r = DetectorConfig(), ReportConfig()
-    assert (d.person_conf, d.person_iou, d.person_classes) == (0.35, 0.20, (0,))
+    assert (d.person_conf, d.person_iou, d.person_classes) == (0.45, 0.20, (0,))
     assert (d.ppe_conf, d.ppe_iou, d.overlap_threshold) == (0.25, 0.20, 0.05)
     assert d.tracker == "bytetrack.yaml"
     assert d.person_weights == "weights/yolov8n.pt"

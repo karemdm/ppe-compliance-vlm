@@ -123,6 +123,8 @@ Run `ppe-compliance --help` and `ppe-compliance analyze --help` for all options.
 | Name | Default | Description |
 |------|---------|-------------|
 | `--person-weights` | `weights/yolov8n.pt` | Person model; falls back to the Ultralytics auto-download by file name |
+| `--person-conf` | `0.45` | Confidence threshold for person detections; raise it if non-persons are detected |
+| `--ppe-conf` | `0.25` | Confidence threshold for PPE / infraction detections |
 | `--tracker` | `bytetrack.yaml` | Tracker name or YAML (e.g. `configs/bytetrack_custom.yaml`); also in the sidebar |
 | `--ppe-model` | `safetyvision` | Bundled PPE model: `safetyvision` or `chd` (also in the sidebar) |
 | `--min-appearances` | `3` | Minimum frames with an infraction for a person to be reported |
@@ -132,8 +134,8 @@ Run `ppe-compliance --help` and `ppe-compliance analyze --help` for all options.
 | `--infractions` (analyze) | all supported by the model | Infractions to monitor (sidebar in the app) |
 | `--input` / `--output` (analyze) | required | Input video / output JSON |
 
-Fixed defaults in `src/ppe_compliance/config.py`: person `conf=0.35`,
-`iou=0.20`, class `0`; PPE `conf=0.25`, `iou=0.20`, `imgsz` from the model
+Other fixed defaults in `src/ppe_compliance/config.py`: person
+`iou=0.20`, class `0`; PPE `iou=0.20`, `imgsz` from the model
 registry (896 for safetyvision, 640 for chd); overlap threshold `0.05`;
 VLM greedy decoding, `max_new_tokens=60`, `repetition_penalty=1.5`.
 

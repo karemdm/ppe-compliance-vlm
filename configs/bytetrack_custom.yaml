@@ -3,7 +3,7 @@
 # and a longer buffer keeps the same ID while a person is briefly occluded.
 # Select it with `--tracker configs/bytetrack_custom.yaml` or in the app sidebar.
 # The default tracker remains Ultralytics' built-in `bytetrack.yaml`.
-# Note: detections below the `conf` passed to `track()` (0.35 by default)
+# Note: detections below the `conf` passed to `track()` (0.45 by default)
 # never reach the tracker, so the thresholds below only matter if `conf` is lowered.
 
 tracker_type: bytetrack

@@ -25,6 +25,10 @@ def add_pipeline_args(parser: argparse.ArgumentParser) -> None:
     d, r, v = DetectorConfig(), ReportConfig(), VLMConfig()
     parser.add_argument("--person-weights", default=d.person_weights,
                         help="Person detection weights (falls back to auto-download by file name).")
+    parser.add_argument("--person-conf", type=float, default=d.person_conf,
+                        help="Confidence threshold for person detections (raise it to drop false persons).")
+    parser.add_argument("--ppe-conf", type=float, default=d.ppe_conf,
+                        help="Confidence threshold for PPE / infraction detections.")
     parser.add_argument("--tracker", default=d.tracker,
                         help=f"Tracker name or YAML path, e.g. bytetrack.yaml or {CUSTOM_TRACKER}.")
     parser.add_argument("--ppe-model", choices=list(PPE_MODELS), default=d.ppe_model,
@@ -51,6 +55,8 @@ def build_configs(args: argparse.Namespace) -> Tuple[DetectorConfig, ReportConfi
     """
     detector = DetectorConfig(
         person_weights=args.person_weights,
+        person_conf=args.person_conf,
+        ppe_conf=args.ppe_conf,
         tracker=args.tracker,
         ppe_model=args.ppe_model,
     )

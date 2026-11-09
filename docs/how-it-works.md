@@ -20,7 +20,7 @@ flowchart TD
 
 ## 1. Person tracking
 
-`yolov8n.pt` runs with `track(..., classes=[0], conf=0.35, iou=0.20,
+`yolov8n.pt` runs with `track(..., classes=[0], conf=0.45, iou=0.20,
 tracker="bytetrack.yaml", persist=True)`. `persist=True` keeps the tracker
 state between frames so ids are stable. The tracker is reset when a new video
 (or new settings) is processed, so ids start again for each video. Frames in
@@ -137,7 +137,7 @@ agree with the detector; it is a description, not an independent check.
 
 | Parameter | Default | Effect of increasing |
 |-----------|---------|----------------------|
-| person `conf` | 0.35 | fewer person detections, fewer false persons |
+| person `conf` | 0.45 | fewer person detections, fewer false persons |
 | person `iou` | 0.20 | NMS keeps more overlapping person boxes |
 | PPE `conf` | 0.25 | fewer PPE / infraction boxes |
 | PPE `iou` | 0.20 | NMS keeps more overlapping PPE boxes |

@@ -41,7 +41,7 @@ class DetectorConfig:
     """
 
     person_weights: str = "weights/yolov8n.pt"
-    person_conf: float = 0.35
+    person_conf: float = 0.45
     person_iou: float = 0.20
     person_classes: Tuple[int, ...] = (0,)
     tracker: str = "bytetrack.yaml"
