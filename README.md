@@ -92,6 +92,9 @@ python -m ppe_compliance analyze --input video.mp4 --output outputs/report.json
 python -m ppe_compliance analyze --input video.mp4 --output report.json --no-vlm \
     --infractions no-hardhat "no-safety vest"
 python -m ppe_compliance analyze --input video.mp4 --output report.json --ppe-model chd
+# also write the annotated video
+python -m ppe_compliance analyze --input samples/ppe_demo_input_30s.mp4 --output outputs/report.json \
+    --save-video outputs/ppe_demo_annotated.mp4
 ```
 
 `--infractions` is validated against the selected model; for example

@@ -38,8 +38,39 @@ def build_parser() -> argparse.ArgumentParser:
                              + "; ".join(f"{k}: {', '.join(s.infraction_labels())}"
                                          for k, s in PPE_MODELS.items())
                              + ").")
+    parser.add_argument("--save-video", default=None, metavar="PATH",
+                        help="Also write the annotated video (mp4v) to PATH.")
     add_pipeline_args(parser)
     return parser
+
+
+def _open_writer(path: str, input_path: str, first_frame: Any) -> Any:
+    """Create a ``cv2.VideoWriter`` matching the input FPS and the frame size.
+
+    Args:
+        path: Output video path (parent folders are created).
+        input_path: Input video, used to read its frame rate.
+        first_frame: First annotated frame, used for the output size.
+
+    Returns:
+        An opened ``cv2.VideoWriter``.
+
+    Raises:
+        IOError: If the writer cannot be opened.
+    """
+    import os
+
+    import cv2
+
+    cap = cv2.VideoCapture(input_path)
+    fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+    cap.release()
+    height, width = first_frame.shape[:2]
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    writer = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (width, height))
+    if not writer.isOpened():
+        raise IOError(f"Cannot open video writer: {path}")
+    return writer
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -62,11 +93,21 @@ def main(argv: Optional[List[str]] = None) -> int:
     detector = PPEDetector(detector_cfg)
     aggregator = PersonInfractionAggregator()
     frames = 0
-    for step in process_video(detector, args.input, targets):
-        aggregator.update_many(step.infractions)
-        frames = step.index
-        if step.index % 100 == 0:
-            logger.info("Processed %d/%d frames", step.index, step.total)
+    writer = None
+    try:
+        for step in process_video(detector, args.input, targets):
+            aggregator.update_many(step.infractions)
+            frames = step.index
+            if args.save_video:
+                if writer is None:
+                    writer = _open_writer(args.save_video, args.input, step.annotated)
+                writer.write(step.annotated)
+            if step.index % 100 == 0:
+                logger.info("Processed %d/%d frames", step.index, step.total)
+    finally:
+        if writer is not None:
+            writer.release()
+            logger.info("Annotated video saved to %s", args.save_video)
 
     reports = aggregator.select_reports(report_cfg.min_appearances, report_cfg.min_ratio)
     reporter = None if args.no_vlm else VLMReporter(vlm_cfg)
