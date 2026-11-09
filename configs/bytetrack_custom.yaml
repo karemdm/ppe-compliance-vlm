@@ -1,0 +1,16 @@
+# Custom ByteTrack configuration (Ultralytics format).
+# Very low detection thresholds keep weak person detections in the tracker,
+# and a longer buffer keeps the same ID while a person is briefly occluded.
+# Select it with `--tracker configs/bytetrack_custom.yaml` or in the app sidebar.
+# The default tracker remains Ultralytics' built-in `bytetrack.yaml`.
+# Note: detections below the `conf` passed to `track()` (0.35 by default)
+# never reach the tracker, so the thresholds below only matter if `conf` is lowered.
+
+tracker_type: bytetrack
+track_high_thresh: 0.01  # threshold for the first association stage
+track_low_thresh: 0.001  # threshold for the second (low-score) association stage
+new_track_thresh: 0.01   # minimum score to start a new track
+match_thresh: 0.8        # matching threshold for associating detections to tracks
+track_buffer: 60         # frames a lost track is kept (increased to hold IDs longer)
+frame_rate: 30           # nominal frame rate used to scale track_buffer
+fuse_score: True         # fuse detection confidence with IoU distance before matching

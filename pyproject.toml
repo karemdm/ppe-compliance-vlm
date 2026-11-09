@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ppe-compliance-vlm"
+version = "0.1.0"
+description = "PPE compliance monitoring on video: YOLO person tracking, PPE detection, per-person consolidation and short VLM reports in a Streamlit app."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "AGPL-3.0-only" }
+authors = [{ name = "Karem Daiane Marcomini" }]
+dependencies = [
+    "ultralytics>=8.1.0",
+    "opencv-python>=4.8.0",
+    "numpy>=1.24.0",
+    "lap>=0.5.12",
+    "torch>=2.0.0",
+    "transformers>=4.46.0",
+    "pillow>=10.0.0",
+    "streamlit>=1.50.0",
+]
+
+[project.scripts]
+ppe-compliance = "ppe_compliance.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
