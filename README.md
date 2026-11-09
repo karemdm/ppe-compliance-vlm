@@ -98,28 +98,27 @@ Hugging Face.
 
 ## Results
 
-Example run on [`samples/ppe_demo_input.mp4`](samples/README.md) (four real-time Pexels clips:
-construction site, warehouse aisle, industrial structure, lumber warehouse; 1,598 frames, ~53 s)
-with the default `safetyvision` model, person `conf=0.45`, `--no-vlm`, on CPU (about 7 minutes):
+Example run on [`samples/ppe_demo_input.mp4`](samples/README.md) (six real-time Pexels clips:
+construction site, industrial structure, two carpenters, warehouse aisle, compliant worker, lumber
+warehouse; 2,484 frames, ~83 s) with the default `safetyvision` model, person `conf=0.45`,
+PPE `conf=0.15`, temporal confirmation with the default 3 s window, `--no-vlm`, on CPU (about 12 minutes):
 
 | File | Content |
 |---|---|
-| [`results/ppe_demo_safetyvision.mp4`](results/ppe_demo_safetyvision.mp4) | Annotated video (720p, **played at 1.5× speed**; processing ran at the original speed): person boxes in red when an infraction is associated, PPE items in green, infractions in red. |
-| [`results/report_safetyvision.json`](results/report_safetyvision.json) | Consolidated report: 24 tracked IDs with infractions (23 × NO-Safety Vest, 8 × NO-Hardhat, 2 × NO-Goggles). |
+| [`results/ppe_demo_safetyvision.mp4`](results/ppe_demo_safetyvision.mp4) | Annotated video (720p, **played at 1.5× speed**; processing ran at the original speed). Person boxes: gray while checking, green when compliant, red with the confirmed violations. Thin boxes are the raw PPE detections. |
+| [`results/report_safetyvision.json`](results/report_safetyvision.json) | Consolidated report of confirmed violations: 20 tracked IDs (20 × NO-Safety Vest, 5 × NO-Hardhat, 3 × NO-Goggles). |
 
-The GIF at the top shows the industrial-structure segment.
-
-These files were produced before the temporal confirmation was added (person
-boxes followed each frame, `ppe_conf` 0.25); a run with the current version
-will differ.
+The GIF at the top shows the construction-site segment.
 
 Observations from this run (qualitative, not a validated evaluation):
 
-- Industrial structure: the worker with hardhat and vest stays green; the worker without a vest is flagged `NO-Safety Vest`. Missing gloves on the first worker are not flagged.
-- Construction site: hardhats are detected on most workers; missing vests are flagged on part of them. The person model (`yolov8n`, 640 px) finds about 7–9 of the ~20 workers per frame, so some workers are never checked.
-- Warehouse aisle: one worker without a hardhat is not flagged, and a shelf in the foreground is detected as a person (confidence up to 0.57).
-- Lumber warehouse: the spotter's vest is detected; the forklift operator (no vest, no hardhat) is not flagged.
-- Tracker ID switches inflate the per-person count.
+- Construction site: the worker in a sun hat is confirmed `NO-Hardhat`; the worker in a hi-vis shirt stays green; most others are confirmed `NO-Safety Vest`. The person model (`yolov8n`, 640 px) still finds only part of the ~20 workers, so some are never checked.
+- Industrial structure: the worker without a vest is confirmed `NO-Safety Vest`; the other worker is confirmed `NO-Goggles` from weak detections (0.18–0.22) that were stable over the window — the temporal rule removes flicker, not consistent errors. Missing gloves are not flagged.
+- Carpenters: both confirmed `NO-Safety Vest`.
+- Warehouse aisle: all three workers are confirmed as violations (no hardhat / no vest).
+- Compliant worker (hardhat + vest, back view): stays green.
+- Lumber warehouse: the workers are small and far; their boxes stay gray (not enough evidence) instead of guessing.
+- Tracker ID switches still inflate the per-person count.
 
 ## Usage
 

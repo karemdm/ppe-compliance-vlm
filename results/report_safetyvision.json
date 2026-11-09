@@ -1,6 +1,6 @@
 {
   "input": "samples/ppe_demo_input.mp4",
-  "frames_processed": 1598,
+  "frames_processed": 2484,
   "monitored_infractions": [
     "no-hardhat",
     "no-safety vest",
@@ -14,257 +14,195 @@
     "ppe_model": "safetyvision",
     "tracker": "bytetrack.yaml",
     "min_appearances": 3,
-    "min_ratio": 0.1
+    "min_ratio": 0.1,
+    "ppe_conf": 0.15,
+    "temporal": {
+      "window_seconds": 3.0,
+      "min_majority": 0.6,
+      "min_coverage": 0.3,
+      "lost_seconds": 2.0,
+      "min_frames": 5
+    }
   },
-  "persons_with_infractions": 24,
-  "total_consolidated_infractions": 33,
+  "persons_with_infractions": 20,
+  "total_consolidated_infractions": 28,
   "persons": [
     {
-      "person_id": 8,
-      "appearances": 202,
-      "infractions": [
-        "NO-Safety Vest"
-      ],
-      "infraction_counts": {
-        "NO-Safety Vest": 202
-      },
-      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
-      "description_source": "template"
-    },
-    {
-      "person_id": 5,
-      "appearances": 204,
-      "infractions": [
-        "NO-Safety Vest",
-        "NO-Hardhat"
-      ],
-      "infraction_counts": {
-        "NO-Safety Vest": 185,
-        "NO-Hardhat": 21
-      },
-      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest, NO-Hardhat.",
-      "description_source": "template"
-    },
-    {
       "person_id": 3,
-      "appearances": 97,
+      "appearances": 58,
       "infractions": [
         "NO-Safety Vest"
       ],
       "infraction_counts": {
-        "NO-Safety Vest": 97
-      },
-      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
-      "description_source": "template"
-    },
-    {
-      "person_id": 2,
-      "appearances": 253,
-      "infractions": [
-        "NO-Safety Vest",
-        "NO-Hardhat"
-      ],
-      "infraction_counts": {
-        "NO-Safety Vest": 231,
-        "NO-Hardhat": 30
-      },
-      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest, NO-Hardhat.",
-      "description_source": "template"
-    },
-    {
-      "person_id": 7,
-      "appearances": 67,
-      "infractions": [
-        "NO-Safety Vest",
-        "NO-Hardhat"
-      ],
-      "infraction_counts": {
-        "NO-Safety Vest": 41,
-        "NO-Hardhat": 46
-      },
-      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest, NO-Hardhat.",
-      "description_source": "template"
-    },
-    {
-      "person_id": 10,
-      "appearances": 54,
-      "infractions": [
-        "NO-Safety Vest"
-      ],
-      "infraction_counts": {
-        "NO-Safety Vest": 54
+        "NO-Safety Vest": 58
       },
       "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
       "description_source": "template"
     },
     {
       "person_id": 4,
-      "appearances": 94,
+      "appearances": 156,
       "infractions": [
         "NO-Safety Vest"
       ],
       "infraction_counts": {
-        "NO-Safety Vest": 94
+        "NO-Safety Vest": 156
+      },
+      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
+      "description_source": "template"
+    },
+    {
+      "person_id": 2,
+      "appearances": 446,
+      "infractions": [
+        "NO-Safety Vest"
+      ],
+      "infraction_counts": {
+        "NO-Safety Vest": 446
+      },
+      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
+      "description_source": "template"
+    },
+    {
+      "person_id": 5,
+      "appearances": 319,
+      "infractions": [
+        "NO-Safety Vest",
+        "NO-Hardhat"
+      ],
+      "infraction_counts": {
+        "NO-Safety Vest": 319,
+        "NO-Hardhat": 107
+      },
+      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest, NO-Hardhat.",
+      "description_source": "template"
+    },
+    {
+      "person_id": 7,
+      "appearances": 66,
+      "infractions": [
+        "NO-Hardhat",
+        "NO-Safety Vest"
+      ],
+      "infraction_counts": {
+        "NO-Hardhat": 66,
+        "NO-Safety Vest": 66
+      },
+      "description": "Worker operating without the following mandatory safety items: NO-Hardhat, NO-Safety Vest.",
+      "description_source": "template"
+    },
+    {
+      "person_id": 8,
+      "appearances": 254,
+      "infractions": [
+        "NO-Safety Vest"
+      ],
+      "infraction_counts": {
+        "NO-Safety Vest": 254
+      },
+      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
+      "description_source": "template"
+    },
+    {
+      "person_id": 10,
+      "appearances": 3,
+      "infractions": [
+        "NO-Safety Vest"
+      ],
+      "infraction_counts": {
+        "NO-Safety Vest": 3
       },
       "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
       "description_source": "template"
     },
     {
       "person_id": 12,
-      "appearances": 120,
-      "infractions": [
-        "NO-Safety Vest",
-        "NO-Hardhat"
-      ],
-      "infraction_counts": {
-        "NO-Safety Vest": 89,
-        "NO-Hardhat": 61
-      },
-      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest, NO-Hardhat.",
-      "description_source": "template"
-    },
-    {
-      "person_id": 15,
-      "appearances": 116,
-      "infractions": [
-        "NO-Safety Vest"
-      ],
-      "infraction_counts": {
-        "NO-Safety Vest": 110
-      },
-      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
-      "description_source": "template"
-    },
-    {
-      "person_id": 21,
-      "appearances": 4,
-      "infractions": [
-        "NO-Hardhat"
-      ],
-      "infraction_counts": {
-        "NO-Hardhat": 4
-      },
-      "description": "Worker operating without the following mandatory safety items: NO-Hardhat.",
-      "description_source": "template"
-    },
-    {
-      "person_id": 22,
-      "appearances": 8,
+      "appearances": 182,
       "infractions": [
         "NO-Hardhat",
         "NO-Safety Vest"
       ],
       "infraction_counts": {
-        "NO-Hardhat": 4,
-        "NO-Safety Vest": 4
+        "NO-Hardhat": 107,
+        "NO-Safety Vest": 182
       },
       "description": "Worker operating without the following mandatory safety items: NO-Hardhat, NO-Safety Vest.",
       "description_source": "template"
     },
     {
       "person_id": 17,
-      "appearances": 237,
-      "infractions": [
-        "NO-Hardhat",
-        "NO-Safety Vest"
-      ],
-      "infraction_counts": {
-        "NO-Hardhat": 26,
-        "NO-Safety Vest": 212
-      },
-      "description": "Worker operating without the following mandatory safety items: NO-Hardhat, NO-Safety Vest.",
-      "description_source": "template"
-    },
-    {
-      "person_id": 28,
-      "appearances": 26,
+      "appearances": 278,
       "infractions": [
         "NO-Safety Vest"
       ],
       "infraction_counts": {
-        "NO-Safety Vest": 26
+        "NO-Safety Vest": 278
       },
       "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
       "description_source": "template"
     },
     {
       "person_id": 25,
-      "appearances": 192,
+      "appearances": 254,
       "infractions": [
         "NO-Safety Vest"
       ],
       "infraction_counts": {
-        "NO-Safety Vest": 192
+        "NO-Safety Vest": 254
+      },
+      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
+      "description_source": "template"
+    },
+    {
+      "person_id": 15,
+      "appearances": 141,
+      "infractions": [
+        "NO-Safety Vest"
+      ],
+      "infraction_counts": {
+        "NO-Safety Vest": 141
       },
       "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
       "description_source": "template"
     },
     {
       "person_id": 34,
-      "appearances": 17,
+      "appearances": 16,
       "infractions": [
         "NO-Safety Vest"
       ],
       "infraction_counts": {
-        "NO-Safety Vest": 17
+        "NO-Safety Vest": 16
       },
       "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
       "description_source": "template"
     },
     {
       "person_id": 41,
-      "appearances": 275,
+      "appearances": 147,
       "infractions": [
         "NO-Safety Vest"
       ],
       "infraction_counts": {
-        "NO-Safety Vest": 255
-      },
-      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
-      "description_source": "template"
-    },
-    {
-      "person_id": 1,
-      "appearances": 135,
-      "infractions": [
-        "NO-Safety Vest",
-        "NO-Goggles",
-        "NO-Hardhat"
-      ],
-      "infraction_counts": {
-        "NO-Safety Vest": 44,
-        "NO-Goggles": 52,
-        "NO-Hardhat": 47
-      },
-      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest, NO-Goggles, NO-Hardhat.",
-      "description_source": "template"
-    },
-    {
-      "person_id": 45,
-      "appearances": 254,
-      "infractions": [
-        "NO-Safety Vest"
-      ],
-      "infraction_counts": {
-        "NO-Safety Vest": 248
+        "NO-Safety Vest": 147
       },
       "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
       "description_source": "template"
     },
     {
       "person_id": 47,
-      "appearances": 44,
+      "appearances": 41,
       "infractions": [
         "NO-Safety Vest"
       ],
       "infraction_counts": {
-        "NO-Safety Vest": 44
+        "NO-Safety Vest": 41
       },
       "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
       "description_source": "template"
     },
     {
-      "person_id": 50,
+      "person_id": 45,
       "appearances": 21,
       "infractions": [
         "NO-Safety Vest"
@@ -276,53 +214,73 @@
       "description_source": "template"
     },
     {
-      "person_id": 49,
-      "appearances": 28,
+      "person_id": 55,
+      "appearances": 151,
       "infractions": [
         "NO-Safety Vest"
       ],
       "infraction_counts": {
-        "NO-Safety Vest": 28
+        "NO-Safety Vest": 151
       },
       "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
       "description_source": "template"
     },
     {
-      "person_id": 52,
-      "appearances": 14,
-      "infractions": [
-        "NO-Safety Vest"
-      ],
-      "infraction_counts": {
-        "NO-Safety Vest": 14
-      },
-      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
-      "description_source": "template"
-    },
-    {
-      "person_id": 57,
-      "appearances": 241,
-      "infractions": [
-        "NO-Safety Vest"
-      ],
-      "infraction_counts": {
-        "NO-Safety Vest": 241
-      },
-      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
-      "description_source": "template"
-    },
-    {
-      "person_id": 58,
-      "appearances": 36,
+      "person_id": 56,
+      "appearances": 297,
       "infractions": [
         "NO-Goggles",
         "NO-Safety Vest"
       ],
       "infraction_counts": {
-        "NO-Goggles": 32,
-        "NO-Safety Vest": 4
+        "NO-Goggles": 297,
+        "NO-Safety Vest": 86
       },
       "description": "Worker operating without the following mandatory safety items: NO-Goggles, NO-Safety Vest.",
+      "description_source": "template"
+    },
+    {
+      "person_id": 58,
+      "appearances": 458,
+      "infractions": [
+        "NO-Safety Vest",
+        "NO-Goggles"
+      ],
+      "infraction_counts": {
+        "NO-Safety Vest": 458,
+        "NO-Goggles": 60
+      },
+      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest, NO-Goggles.",
+      "description_source": "template"
+    },
+    {
+      "person_id": 59,
+      "appearances": 344,
+      "infractions": [
+        "NO-Safety Vest",
+        "NO-Hardhat"
+      ],
+      "infraction_counts": {
+        "NO-Safety Vest": 344,
+        "NO-Hardhat": 116
+      },
+      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest, NO-Hardhat.",
+      "description_source": "template"
+    },
+    {
+      "person_id": 62,
+      "appearances": 94,
+      "infractions": [
+        "NO-Goggles",
+        "NO-Hardhat",
+        "NO-Safety Vest"
+      ],
+      "infraction_counts": {
+        "NO-Goggles": 94,
+        "NO-Hardhat": 75,
+        "NO-Safety Vest": 39
+      },
+      "description": "Worker operating without the following mandatory safety items: NO-Goggles, NO-Hardhat, NO-Safety Vest.",
       "description_source": "template"
     }
   ],
