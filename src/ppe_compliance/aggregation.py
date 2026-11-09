@@ -1,7 +1,8 @@
 """Per-person consolidation of frame-level infractions (standard library only)."""
 
+from collections import Counter
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, FrozenSet, Iterable, List, Optional
 
 
 @dataclass
@@ -28,11 +29,15 @@ class PersonRecord:
         appearances: Number of frames with at least one associated infraction.
         ppe_counts: Frames per infraction label, in first-seen order.
         latest_crop: Crop from the most recent frame with an infraction.
+        label_sets: Number of frames per exact set of labels. It lets
+            :meth:`PersonInfractionAggregator.select_reports` restrict the
+            report to a subset of labels without reprocessing the video.
     """
 
     appearances: int = 0
     ppe_counts: Dict[str, int] = field(default_factory=dict)
     latest_crop: Any = None
+    label_sets: Counter = field(default_factory=Counter)
 
 
 @dataclass
@@ -78,8 +83,10 @@ class PersonInfractionAggregator:
         record = self._records.setdefault(item.person_id, PersonRecord())
         record.appearances += 1
         record.latest_crop = item.crop
-        for label in dict.fromkeys(item.missing_ppes):
+        labels = list(dict.fromkeys(item.missing_ppes))
+        for label in labels:
             record.ppe_counts[label] = record.ppe_counts.get(label, 0) + 1
+        record.label_sets[frozenset(labels)] += 1
 
     def update_many(self, items: Iterable[FrameInfraction]) -> None:
         """Add all infractions of a frame.
@@ -91,41 +98,72 @@ class PersonInfractionAggregator:
             self.update(item)
 
     def select_reports(
-        self, min_appearances: int = 3, min_ratio: float = 0.10
+        self,
+        min_appearances: int = 3,
+        min_ratio: float = 0.10,
+        labels: Optional[Iterable[str]] = None,
     ) -> List[PersonReport]:
         """Select persons and infractions that are consistent over time.
 
         A person is kept when ``appearances >= min_appearances`` and at least
         one infraction label has ``count / appearances >= min_ratio``.
 
+        When ``labels`` is given, the statistics are recomputed as if only
+        those labels had been monitored: a frame counts as an appearance only
+        if it contains at least one of them. This gives the same result as
+        processing the video with that filter, so the UI can change the filter
+        without running the models again.
+
         Args:
             min_appearances: Minimum frames with an infraction.
             min_ratio: Minimum per-label ratio.
+            labels: Optional subset of infraction labels to report.
 
         Returns:
             Reports in first-seen order of the persons.
         """
+        wanted: Optional[FrozenSet[str]] = None if labels is None else frozenset(labels)
         reports: List[PersonReport] = []
         for person_id, record in self._records.items():
-            if record.appearances < min_appearances:
+            appearances, counts = _filtered_stats(record, wanted)
+            if appearances < min_appearances:
                 continue
             kept = {
                 label: count
-                for label, count in record.ppe_counts.items()
-                if count / record.appearances >= min_ratio
+                for label, count in counts.items()
+                if count / appearances >= min_ratio
             }
             if not kept:
                 continue
             reports.append(
                 PersonReport(
                     person_id=person_id,
-                    appearances=record.appearances,
+                    appearances=appearances,
                     infractions=list(kept),
                     ppe_counts=kept,
                     crop=record.latest_crop,
                 )
             )
         return reports
+
+
+def _filtered_stats(
+    record: PersonRecord, wanted: Optional[FrozenSet[str]]
+) -> "tuple[int, Dict[str, int]]":
+    """Return ``(appearances, per-label counts)`` restricted to ``wanted``.
+
+    Args:
+        record: Person record.
+        wanted: Labels to keep, or ``None`` for all labels.
+
+    Returns:
+        Appearances and label counts (labels in first-seen order).
+    """
+    if wanted is None:
+        return record.appearances, dict(record.ppe_counts)
+    appearances = sum(n for s, n in record.label_sets.items() if s & wanted)
+    counts = {label: c for label, c in record.ppe_counts.items() if label in wanted}
+    return appearances, counts
 
 
 def total_infractions(reports: Iterable[PersonReport]) -> int:

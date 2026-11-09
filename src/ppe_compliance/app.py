@@ -85,20 +85,23 @@ with col_reports:
     reports_area = st.container()
 
 state = st.session_state
-state.setdefault("reports", None)
+state.setdefault("aggregator", None)
 state.setdefault("cache_key", None)
 state.setdefault("vlm_results", {})
 
 if uploaded is None:
     status_text.info("Waiting for a video upload to start the inspection.")
-    state.reports, state.cache_key, state.vlm_results = None, None, {}
+    state.aggregator, state.cache_key, state.vlm_results = None, None, {}
     st.stop()
 
-key = (uploaded.name, uploaded.size, ppe_model, tuple(selected), tracker)
-if state.cache_key != key:  # new video or new settings: invalidate cached results
-    state.reports, state.cache_key, state.vlm_results = None, key, {}
+# The video is processed once per (file, model, tracker) with ALL infractions the
+# model supports. Changing the infraction filter only re-selects the reports from
+# the cached aggregator, so Streamlit reruns never process the same video twice.
+key = (uploaded.name, uploaded.size, ppe_model, tracker)
+if state.cache_key != key:  # new video, model or tracker: invalidate cached results
+    state.aggregator, state.cache_key, state.vlm_results = None, key, {}
 
-if state.reports is None:
+if state.aggregator is None:
     with tempfile.NamedTemporaryFile(delete=False, suffix=Path(uploaded.name).suffix or ".mp4") as tmp:
         tmp.write(uploaded.getvalue())
     detector.reset_tracking(tracker)
@@ -106,7 +109,7 @@ if state.reports is None:
     recent_logs: list = []
     last_ui = 0.0
     status_text.info("Processing video...")
-    for step in process_video(detector, tmp.name, selected):
+    for step in process_video(detector, tmp.name, None):
         aggregator.update_many(step.infractions)
         recent_logs = (recent_logs + step.logs)[-MAX_LOG_LINES:]
         now = time.time()
@@ -117,10 +120,10 @@ if state.reports is None:
             last_ui = now
     Path(tmp.name).unlink(missing_ok=True)
     progress_bar.progress(1.0)
-    status_text.success("Video processed. Generating reports...")
-    state.reports = aggregator.select_reports(report_cfg.min_appearances, report_cfg.min_ratio)
+    state.aggregator = aggregator
 
-reports = state.reports
+status_text.success("Video processed (cached). Changing the infraction filter does not reprocess it.")
+reports = state.aggregator.select_reports(report_cfg.min_appearances, report_cfg.min_ratio, labels=selected)
 with reports_area:
     st.markdown("---")
     st.metric("Persons with infractions", len(reports))
@@ -133,7 +136,8 @@ with reports_area:
     reporter = None if args.no_vlm else load_reporter(vlm_cfg.model_id)
     with st.status("Analyzing infractions with the VLM...", expanded=True) as status_box:
         for idx, report in enumerate(reports, start=1):
-            if report.person_id in state.vlm_results:
+            vlm_key = (report.person_id, tuple(report.infractions))
+            if vlm_key in state.vlm_results:
                 continue
             status_box.update(label=f"Describing person #{report.person_id} ({idx}/{len(reports)})...")
             if reporter is None:
@@ -145,7 +149,7 @@ with reports_area:
                     st.error(f"{exc} Using the template sentence instead.")
                     reporter = None  # do not retry a failing model for every person
                     text = fallback_description(report.infractions)
-            state.vlm_results[report.person_id] = text
+            state.vlm_results[vlm_key] = text
         status_box.update(label=f"Reports ready for {len(reports)} person(s).", state="complete", expanded=False)
 
     for report in reports:
@@ -155,4 +159,5 @@ with reports_area:
         c1, c2 = exp.columns([1, 2])
         c1.image(bgr_to_pil(report.crop), caption=f"ID #{report.person_id}", width=130)
         c2.markdown("**Missing PPE / events:**\n" + "\n".join(f"- **{p}**" for p in report.infractions))
-        c2.info(f"**VLM report:** {state.vlm_results.get(report.person_id, 'Analysis pending...')}")
+        vlm_text = state.vlm_results.get((report.person_id, tuple(report.infractions)), "Analysis pending...")
+        c2.info(f"**VLM report:** {vlm_text}")

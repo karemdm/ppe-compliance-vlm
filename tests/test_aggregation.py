@@ -62,3 +62,31 @@ def test_update_many() -> None:
     agg = PersonInfractionAggregator()
     agg.update_many([FrameInfraction(1, ["no-mask"]), FrameInfraction(2, ["no-mask"])])
     assert set(agg.records) == {1, 2}
+
+
+def _as_tuples(reports: list) -> list:
+    return [(r.person_id, r.appearances, r.infractions, r.ppe_counts) for r in reports]
+
+
+def test_label_filter_matches_processing_with_filter():
+    frames = [
+        ["no-hardhat"], ["no-hardhat", "no-gloves"], ["no-gloves"], ["no-gloves"],
+        ["no-gloves"], ["no-hardhat"], ["no-gloves"], ["no-gloves"], ["no-gloves"], ["no-gloves"],
+    ]
+    wanted = {"no-hardhat"}
+    # Processing once with every label, then filtering the report...
+    full = PersonInfractionAggregator()
+    _feed(full, 1, frames)
+    filtered = full.select_reports(3, 0.10, labels=wanted)
+    # ...must equal processing the video with only the wanted labels monitored.
+    direct = PersonInfractionAggregator()
+    _feed(direct, 1, [[l for l in f if l in wanted] for f in frames if set(f) & wanted])
+    assert _as_tuples(filtered) == _as_tuples(direct.select_reports(3, 0.10))
+    assert filtered[0].appearances == 3
+
+
+def test_label_filter_none_keeps_previous_behaviour():
+    agg = PersonInfractionAggregator()
+    _feed(agg, 7, [["no-mask"], ["no-mask"], ["no-mask"]])
+    assert _as_tuples(agg.select_reports(3, 0.10)) == _as_tuples(agg.select_reports(3, 0.10, labels=None))
+    assert agg.select_reports(3, 0.10, labels=[]) == []
