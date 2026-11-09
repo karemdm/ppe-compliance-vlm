@@ -1,22 +1,41 @@
-"""Person tracking + PPE detection for a single frame."""
+"""Person tracking + PPE detection and per-person observations for a single frame."""
 
 import logging
+from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import numpy as np
 from ultralytics import YOLO
 
-from .aggregation import FrameInfraction
-from .association import match_infractions
+from .association import best_matches, observe_items
 from .config import DetectorConfig, resolve_tracker, resolve_weights
+from .drawing import GREEN, RED, draw_labeled_box
 from .models import get_model_spec, resolve_model_weights, unmatched_class_names
-from .drawing import GREEN, RED, crop_box, draw_labeled_box
+from .temporal import Observation
 
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class PersonDetection:
+    """A tracked person in one frame with its per-item observations.
+
+    Attributes:
+        track_id: Tracker id.
+        box: ``(x1, y1, x2, y2)`` person box.
+        observations: Observation per monitored item key (e.g. ``"no-hardhat"``).
+        raw_infractions: Infraction labels observed in this frame (before
+            temporal confirmation), for logging.
+    """
+
+    track_id: int
+    box: List[int]
+    observations: Dict[str, Observation]
+    raw_infractions: List[str]
+
+
 class PPEDetector:
-    """Tracks persons and associates PPE infraction detections with them.
+    """Tracks persons and associates PPE / infraction detections with them.
 
     Two models are used: a COCO YOLO model tracked with ByteTrack for persons
     and one of the bundled PPE YOLO models (see :mod:`ppe_compliance.models`).
@@ -37,6 +56,7 @@ class PPEDetector:
         self.spec = get_model_spec(self.config.ppe_model)
         self._infraction_classes = self.spec.infraction_classes()
         self._positive_classes = self.spec.positive_classes()
+        self._items = self.spec.monitored_items()
         ppe_path = resolve_model_weights(self.spec)
         logger.info("Loading PPE model '%s' from %s", self.spec.key, ppe_path)
         self.ppe_model = YOLO(ppe_path)
@@ -98,50 +118,50 @@ class PPEDetector:
         frame: np.ndarray,
         frame_number: int,
         target_infractions: Optional[Iterable[str]] = None,
-    ) -> Tuple[np.ndarray, List[FrameInfraction], List[str]]:
+    ) -> Tuple[np.ndarray, List[PersonDetection], List[str]]:
         """Run tracking, PPE detection and association on one frame.
 
         Positive PPE boxes are drawn in green and monitored infraction boxes in
-        red. Persons are drawn red when associated with an infraction.
+        red (thin lines). Person boxes are not drawn here: their color depends
+        on the temporal rule applied by :func:`pipeline.process_video`.
 
         Args:
             frame: BGR frame.
             frame_number: 1-based frame index (used in the logs).
             target_infractions: Infraction labels to monitor; all infractions
-                supported by the PPE model when ``None``.
+                supported by the PPE model when ``None``. Only these items are
+                observed.
 
         Returns:
-            The annotated frame, the per-person infractions and log lines.
+            The annotated frame, one :class:`PersonDetection` per tracked
+            person and log lines.
         """
         targets = set(self._infraction_classes if target_infractions is None else target_infractions)
+        items = [item for item in self._items if item.key in targets]
         annotated = frame.copy()
         logs = [f"--- Frame {frame_number} ---"]
 
         persons = self._track_persons(frame)
-        infractions_raw: List[Dict[str, Any]] = []
+        relevant: List[Dict[str, Any]] = []
+        n_infractions = 0
         for det in self._detect_ppe(frame):
             label_lower = det["label"].lower()
             is_infraction = label_lower in self._infraction_classes and label_lower in targets
             if not (is_infraction or label_lower in self._positive_classes):
                 continue
-            color = RED if is_infraction else GREEN
-            draw_labeled_box(annotated, det["box"], f"{det['label']} ({det['conf']:.2f})", color)
-            if is_infraction:
-                infractions_raw.append(det)
+            n_infractions += is_infraction
+            draw_labeled_box(annotated, det["box"], f"{det['label']} ({det['conf']:.2f})",
+                             RED if is_infraction else GREEN, thickness=1)
+            relevant.append(det)
 
-        logs.append(f"Tracked persons: {len(persons)} | Raw infractions: {len(infractions_raw)}")
+        logs.append(f"Tracked persons: {len(persons)} | Raw infractions: {n_infractions}")
 
-        frame_infractions: List[FrameInfraction] = []
+        detections: List[PersonDetection] = []
         for box, person_id in persons:
-            missing = match_infractions(box, infractions_raw, self.config.overlap_threshold)
-            color = RED if missing else GREEN
-            draw_labeled_box(annotated, box, f"Person #{person_id}", color, font_scale=0.5)
-            if not missing:
-                continue
-            labels = sorted(missing)
-            logs.append(f"Person #{person_id} matched with {labels}")
-            crop = crop_box(frame, box)
-            if crop.size > 0:
-                frame_infractions.append(FrameInfraction(person_id, labels, crop))
-
-        return annotated, frame_infractions, logs
+            matches = best_matches(box, relevant, self.config.overlap_threshold)
+            observations = observe_items(matches, items)
+            raw = [i.label for i in items if observations[i.key] is Observation.NOT_WORN]
+            if raw:
+                logs.append(f"Person #{person_id} raw infractions {raw}")
+            detections.append(PersonDetection(person_id, box, observations, raw))
+        return annotated, detections, logs

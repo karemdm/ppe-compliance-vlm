@@ -1,4 +1,8 @@
-"""Per-person consolidation of frame-level infractions (standard library only)."""
+"""Per-person consolidation of frame-level infractions (standard library only).
+
+The pipeline feeds it with *confirmed* violations (after the temporal rule of
+:mod:`ppe_compliance.temporal`), so the counts are frames in a confirmed state.
+"""
 
 from collections import Counter
 from dataclasses import dataclass, field
@@ -11,7 +15,7 @@ class FrameInfraction:
 
     Attributes:
         person_id: Tracker id of the person.
-        missing_ppes: Infraction labels associated with the person.
+        missing_ppes: Confirmed infraction labels of the person.
         crop: Person crop (BGR image array); typed as ``Any`` to stay
             independent of numpy.
     """
@@ -108,21 +112,22 @@ class PersonInfractionAggregator:
         A person is kept when ``appearances >= min_appearances`` and at least
         one infraction label has ``count / appearances >= min_ratio``.
 
-        When ``labels`` is given, the statistics are recomputed as if only
-        those labels had been monitored: a frame counts as an appearance only
-        if it contains at least one of them. This gives the same result as
-        processing the video with that filter, so the UI can change the filter
-        without running the models again.
+        When ``labels`` is given (case-insensitive), the statistics are
+        recomputed as if only those items had been monitored: a frame counts
+        as an appearance only if it contains at least one of them. Items are
+        confirmed independently of each other, so this gives the same result
+        as processing the video with that filter and the UI can change the
+        filter without running the models again.
 
         Args:
-            min_appearances: Minimum frames with an infraction.
+            min_appearances: Minimum frames with a (confirmed) infraction.
             min_ratio: Minimum per-label ratio.
             labels: Optional subset of infraction labels to report.
 
         Returns:
             Reports in first-seen order of the persons.
         """
-        wanted: Optional[FrozenSet[str]] = None if labels is None else frozenset(labels)
+        wanted: Optional[FrozenSet[str]] = None if labels is None else frozenset(x.lower() for x in labels)
         reports: List[PersonReport] = []
         for person_id, record in self._records.items():
             appearances, counts = _filtered_stats(record, wanted)
@@ -154,15 +159,15 @@ def _filtered_stats(
 
     Args:
         record: Person record.
-        wanted: Labels to keep, or ``None`` for all labels.
+        wanted: Lower-case labels to keep, or ``None`` for all labels.
 
     Returns:
         Appearances and label counts (labels in first-seen order).
     """
     if wanted is None:
         return record.appearances, dict(record.ppe_counts)
-    appearances = sum(n for s, n in record.label_sets.items() if s & wanted)
-    counts = {label: c for label, c in record.ppe_counts.items() if label in wanted}
+    appearances = sum(n for s, n in record.label_sets.items() if any(x.lower() in wanted for x in s))
+    counts = {label: c for label, c in record.ppe_counts.items() if label.lower() in wanted}
     return appearances, counts
 
 

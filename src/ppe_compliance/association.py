@@ -1,9 +1,12 @@
-"""Association of infraction boxes with person boxes (standard library only).
+"""Association of PPE / infraction boxes with person boxes (standard library only).
 
 Boxes are ``(x1, y1, x2, y2)`` sequences in pixel coordinates.
 """
 
-from typing import Iterable, Mapping, Sequence, Set
+from typing import Dict, Iterable, Mapping, Sequence, Set
+
+from .models import MonitoredItem
+from .temporal import Observation, resolve_observation
 
 Box = Sequence[float]
 
@@ -77,4 +80,47 @@ def match_infractions(
         str(inf["label"])
         for inf in infractions
         if boxes_overlap(inf["box"], person_box, threshold)  # type: ignore[arg-type]
+    }
+
+
+def best_matches(
+    person_box: Box,
+    detections: Iterable[Mapping[str, object]],
+    threshold: float = 0.05,
+) -> Dict[str, float]:
+    """Return the highest confidence per lower-case label among associated boxes.
+
+    Args:
+        person_box: Person bounding box.
+        detections: Items with ``"box"``, ``"label"`` and ``"conf"`` keys.
+        threshold: Minimum :func:`overlap_ratio`.
+
+    Returns:
+        Mapping of lower-case label to the best confidence.
+    """
+    best: Dict[str, float] = {}
+    for det in detections:
+        if boxes_overlap(det["box"], person_box, threshold):  # type: ignore[arg-type]
+            label = str(det["label"]).lower()
+            conf = float(det["conf"])  # type: ignore[arg-type]
+            if conf > best.get(label, -1.0):
+                best[label] = conf
+    return best
+
+
+def observe_items(matches: Mapping[str, float], items: Iterable[MonitoredItem]) -> Dict[str, Observation]:
+    """Turn the associated labels of a person into one observation per item.
+
+    Args:
+        matches: Output of :func:`best_matches`.
+        items: Items to observe.
+
+    Returns:
+        Observation per item key (see :func:`temporal.resolve_observation`).
+    """
+    return {
+        item.key: resolve_observation(
+            matches.get(item.positive) if item.positive else None, matches.get(item.key)
+        )
+        for item in items
     }

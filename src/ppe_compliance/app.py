@@ -27,7 +27,7 @@ MAX_LOG_LINES = 20
 UI_REFRESH_S = 0.1
 
 args = build_app_parser().parse_args(sys.argv[1:])
-detector_cfg, report_cfg, vlm_cfg = build_configs(args)
+detector_cfg, report_cfg, vlm_cfg, temporal_cfg = build_configs(args)
 
 
 @st.cache_resource
@@ -68,6 +68,10 @@ trackers = available_trackers()
 if args.tracker not in trackers:
     trackers.insert(0, args.tracker)
 tracker = st.sidebar.selectbox("Tracker configuration:", trackers, index=trackers.index(args.tracker))
+st.sidebar.caption(
+    f"A person turns red or green only after a {temporal_cfg.window_seconds:g} s majority "
+    "of frames agrees (gray while checking)."
+)
 st.sidebar.caption("Detections and VLM text are model outputs and require human review.")
 
 col_stream, col_reports = st.columns([3, 2])
@@ -109,7 +113,7 @@ if state.aggregator is None:
     recent_logs: list = []
     last_ui = 0.0
     status_text.info("Processing video...")
-    for step in process_video(detector, tmp.name, None):
+    for step in process_video(detector, tmp.name, None, temporal_cfg):
         aggregator.update_many(step.infractions)
         recent_logs = (recent_logs + step.logs)[-MAX_LOG_LINES:]
         now = time.time()

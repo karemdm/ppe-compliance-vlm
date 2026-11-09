@@ -43,6 +43,23 @@ class PPEPair:
 
 
 @dataclass(frozen=True)
+class MonitoredItem:
+    """One item checked by the temporal rule: a PPE item or an event class.
+
+    Attributes:
+        key: Lower-case infraction label, e.g. ``"no-hardhat"`` (also used by
+            ``--infractions`` and the sidebar filter).
+        label: Infraction class name in its original spelling, e.g. ``"NO-Hardhat"``.
+        positive: Lower-case class meaning "worn", or ``None`` for negative-only
+            items (``No_Harness``) and events (``Fall-Detected``).
+    """
+
+    key: str
+    label: str
+    positive: Optional[str] = None
+
+
+@dataclass(frozen=True)
 class PPEModelSpec:
     """Description of one bundled PPE detection model.
 
@@ -91,6 +108,14 @@ class PPEModelSpec:
         for p in self.pairs:
             names.extend(n for n in (p.positive, p.negative) if n)
         return names + list(self.extra_infractions) + list(self.ignored_classes)
+
+    def monitored_items(self) -> List[MonitoredItem]:
+        """Return the items with an infraction class, in :meth:`infraction_labels` order."""
+        items = [
+            MonitoredItem(p.negative.lower(), p.negative, p.positive.lower() if p.positive else None)
+            for p in self.pairs if p.negative
+        ]
+        return items + [MonitoredItem(name.lower(), name) for name in self.extra_infractions]
 
     def items(self) -> List[str]:
         """Return the PPE items that have a negative (infraction) class."""

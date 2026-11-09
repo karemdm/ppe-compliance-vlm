@@ -90,3 +90,11 @@ def test_label_filter_none_keeps_previous_behaviour():
     _feed(agg, 7, [["no-mask"], ["no-mask"], ["no-mask"]])
     assert _as_tuples(agg.select_reports(3, 0.10)) == _as_tuples(agg.select_reports(3, 0.10, labels=None))
     assert agg.select_reports(3, 0.10, labels=[]) == []
+
+
+def test_label_filter_is_case_insensitive():
+    agg = PersonInfractionAggregator()
+    _feed(agg, 1, [["NO-Hardhat", "NO-Mask"], ["NO-Hardhat"], ["NO-Hardhat"], ["NO-Mask"]])
+    (report,) = agg.select_reports(3, 0.10, labels=["no-hardhat"])
+    assert report.infractions == ["NO-Hardhat"]
+    assert report.appearances == 3

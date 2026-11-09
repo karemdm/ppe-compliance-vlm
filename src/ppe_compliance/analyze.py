@@ -8,6 +8,7 @@ Usage::
 import argparse
 import json
 import logging
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -29,7 +30,8 @@ def build_parser() -> argparse.ArgumentParser:
     """
     parser = argparse.ArgumentParser(
         prog="ppe-compliance analyze",
-        description="Process a video without UI and write a JSON infraction report (no crops).",
+        description="Process a video without UI and write a JSON report of the "
+                    "temporally confirmed infractions (no crops).",
     )
     parser.add_argument("--input", required=True, help="Input video file.")
     parser.add_argument("--output", required=True, help="Output JSON report path.")
@@ -88,14 +90,17 @@ def main(argv: Optional[List[str]] = None) -> int:
         targets = parse_infractions(args.infractions, get_model_spec(args.ppe_model))
     except ValueError as exc:
         parser.error(str(exc))
-    detector_cfg, report_cfg, vlm_cfg = build_configs(args)
+    try:
+        detector_cfg, report_cfg, vlm_cfg, temporal_cfg = build_configs(args)
+    except ValueError as exc:
+        parser.error(str(exc))
 
     detector = PPEDetector(detector_cfg)
     aggregator = PersonInfractionAggregator()
     frames = 0
     writer = None
     try:
-        for step in process_video(detector, args.input, targets):
+        for step in process_video(detector, args.input, targets, temporal_cfg):
             aggregator.update_many(step.infractions)
             frames = step.index
             if args.save_video:
@@ -135,6 +140,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             "tracker": detector_cfg.tracker,
             "min_appearances": report_cfg.min_appearances,
             "min_ratio": report_cfg.min_ratio,
+            "ppe_conf": detector_cfg.ppe_conf,
+            "temporal": asdict(temporal_cfg),
         },
         "persons_with_infractions": len(reports),
         "total_consolidated_infractions": total_infractions(reports),

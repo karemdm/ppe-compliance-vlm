@@ -34,10 +34,11 @@ class DetectorConfig:
         person_classes: COCO class ids tracked as persons.
         tracker: Ultralytics tracker name or path to a tracker YAML.
         ppe_model: Key of the bundled PPE model (see ``models.PPE_MODELS``).
-        ppe_conf: Confidence threshold for PPE detections.
+        ppe_conf: Confidence threshold for PPE detections. Kept low because
+            the temporal rule (:mod:`ppe_compliance.temporal`) filters noise.
         ppe_iou: NMS IoU threshold for PPE detections.
-        overlap_threshold: Minimum intersection / min(area) to associate an
-            infraction box with a person box.
+        overlap_threshold: Minimum intersection / min(area) to associate a
+            PPE or infraction box with a person box.
     """
 
     person_weights: str = "weights/yolov8n.pt"
@@ -46,7 +47,7 @@ class DetectorConfig:
     person_classes: Tuple[int, ...] = (0,)
     tracker: str = "bytetrack.yaml"
     ppe_model: str = DEFAULT_PPE_MODEL
-    ppe_conf: float = 0.25
+    ppe_conf: float = 0.15
     ppe_iou: float = 0.20
     overlap_threshold: float = 0.05
 
@@ -55,10 +56,13 @@ class DetectorConfig:
 class ReportConfig:
     """Thresholds used to consolidate per-person infractions.
 
+    Both thresholds apply to frames with a *confirmed* violation (after the
+    temporal rule), not to raw detections.
+
     Attributes:
-        min_appearances: Minimum number of frames in which a person must be
-            associated with at least one infraction.
-        min_ratio: Minimum ratio (infraction count / appearances) for a PPE
+        min_appearances: Minimum number of frames in which a person must have
+            at least one confirmed violation.
+        min_ratio: Minimum ratio (confirmed count / appearances) for a PPE
             infraction to be kept in the report.
     """
 
