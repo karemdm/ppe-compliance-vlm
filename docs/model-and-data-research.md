@@ -25,6 +25,8 @@ The current model, [`Hexmon/vyra-yolo-ppe-detection`](https://huggingface.co/Hex
 
 **Suggested next step:** run both against a small, hand-labelled clip set from the target domain before switching. A minimal check is `model.val()` on a few hundred labelled frames. Do not rely on the card numbers alone.
 
+See Round 2 below.
+
 ### How to plug in (app loads via `hf_hub_download(repo_id, filename)` and maps lowercase class names)
 
 **SafetyVision v2:** `hf_hub_download("ayushgupta7777/safetyvision-yolov8", "v2/best.pt")`. Class names are taken verbatim from the card ([source](https://huggingface.co/ayushgupta7777/safetyvision-yolov8)).
@@ -115,10 +117,7 @@ PPE visibility was **not verified**: the clips were not watched. The description
 
 No clip of exactly ~30 s with clearly *partial* PPE was confirmed. Candidate 1 was chosen as the longest Pexels clip, at 24 s.
 
-**Downloaded:** candidate 1 → `C:\Users\KAREMDAIANEMARCOMINI\portfolio\new\_ppe_candidate_video\pexels-5434223-workers-walking-construction-site.mp4` (18,041,361 bytes, HTTP 200, `video/mp4`). It is not committed to the repo and was not opened. Before committing:
-- Watch it to confirm the PPE content.
-- Consider trimming or re-encoding it to keep the repo small.
-- Add a credit line: "Video by Everett Bumstead on Pexels, https://www.pexels.com/video/5434223/".
+**Outcome:** candidate 1 was downloaded and reviewed frame by frame: both workers wear a hardhat and a vest, so it does not show missing PPE and was **not used**. The demo input finally used is described in [`samples/README.md`](../samples/README.md): Pexels 13921040 (construction site, mixed hardhat/vest compliance) followed by Pexels 4281405 (warehouse, no hardhats or vests), about 30 s in total.
 
 ## 5. Method and date of research
 
@@ -141,3 +140,132 @@ No clip of exactly ~30 s with clearly *partial* PPE was confirmed. Candidate 1 w
 - The video's PPE content and framing were not visually verified. Pexels "Free" was read from the page; the full terms are at [pexels.com/license](https://www.pexels.com/license/).
 - **Privacy:** worker footage is personal data. Prefer wide or back shots, avoid identifying individuals, and keep humans in the loop. The model cards above also state that the models should not drive disciplinary decisions on their own.
 - PPE detector output is a screening signal, not evidence. A qualified person should review results before any safety decision.
+
+## Round 2 (deeper search, 2026-11-09)
+
+> Prepared with AI assistance (Claude) on 2026-11-09. All figures are copied from the cited pages. They are self-reported by the authors and were **not** reproduced here. No weights were downloaded. HF pages often show only relative dates ("5 days ago"), which are relative to 2026-11-09.
+
+### R2.1 Coverage (queries and sources)
+
+- **Hugging Face model search:**
+  - [ppe by downloads](https://huggingface.co/models?search=ppe&sort=downloads), [ppe by likes](https://huggingface.co/models?search=ppe&sort=likes) and [ppe by recently modified](https://huggingface.co/models?search=ppe&sort=modified)
+  - [hardhat](https://huggingface.co/models?search=hardhat&sort=downloads), [hard-hat](https://huggingface.co/models?search=hard-hat&sort=downloads), [helmet](https://huggingface.co/models?search=helmet&sort=downloads) and [no-helmet](https://huggingface.co/models?search=no-helmet&sort=downloads)
+  - [safety vest](https://huggingface.co/models?search=safety+vest&sort=downloads), [construction safety](https://huggingface.co/models?search=construction+safety&sort=downloads), [protective equipment](https://huggingface.co/models?search=protective+equipment&sort=downloads), [safety gear](https://huggingface.co/models?search=safety+gear&sort=downloads) and [ppe detr](https://huggingface.co/models?search=ppe+detr) (covers DETR, RT-DETR and RF-DETR)
+  - Only page 1 of each listing was read. The hardhat and helmet listings are dominated by DETR tutorial fine-tunes and generative or LLM repos, which were skipped.
+- **GitHub:**
+  - [ppe detection yolo, by stars](https://github.com/search?q=ppe+detection+yolo&type=repositories&s=stars&o=desc), [ppe yolo26, by stars](https://github.com/search?q=ppe+yolo26&type=repositories&s=stars&o=desc), [hard hat detection, by stars](https://github.com/search?q=hard+hat+detection&type=repositories&s=stars&o=desc) and [construction site safety yolo, by recently updated](https://github.com/search?q=construction+site+safety+yolo&type=repositories&s=updated&o=desc)
+  - The [ppe-detection topic](https://github.com/topics/ppe-detection?o=desc&s=stars)
+  - A web search for YOLO11/YOLO26 repos with `no-helmet`/`no-vest` classes and released `best.pt`
+- **Roboflow Universe:**
+  - A web search for PPE projects with `no-helmet`/`no-vest` classes.
+  - Project pages returned HTTP 403 again (for example [ppe-detection-using-cv](https://universe.roboflow.com/ai-camp-safety-equipment-detection/ppe-detection-using-cv)).
+  - The weight-download policy was checked in the [Roboflow docs](https://docs.roboflow.com/deploy/download-roboflow-model-weights), along with the [Roboflow PPE blog](https://roboflow.com/blog/ppe-detection).
+- **Papers:**
+  - Papers with Code now redirects to HF Papers ([paperswithcode.com/task/ppe-detection](https://paperswithcode.com/task/ppe-detection) returns a 302 to huggingface.co/papers/trending).
+  - Web searches covered arXiv/MDPI 2024–2026 PPE papers and SH17 follow-ups.
+- **Ultralytics:** the [Construction-PPE docs](https://docs.ultralytics.com/datasets/detect/construction-ppe/), the [dataset YAML](https://raw.githubusercontent.com/ultralytics/ultralytics/main/ultralytics/cfg/datasets/construction-ppe.yaml) and the [missing-PPE blog](https://www.ultralytics.com/blog/missing-ppe-detection-yolo).
+
+### R2.2 New candidates with paired classes and downloadable weights
+
+The rows are ordered by how much usable published evidence each one has, not by expected quality.
+
+| # | Model (link) | Arch | Weights | Classes (pairs) | Training data / license | Weights license | Published metrics (split) | Last update | Red flags |
+|---|---|---|---|---|---|---|---|---|---|
+| N1 | [constructelligence/construction-site-safety-hazards](https://huggingface.co/constructelligence/construction-site-safety-hazards) | YOLOv8s @640 | `buildvision-hazards-v0.3.pt` (22.6 MB) and `.onnx` (44.8 MB), [files](https://huggingface.co/constructelligence/construction-site-safety-hazards/tree/main) | 14 listed: person, hardhat/no-hardhat, safety vest/no-safety vest, gloves/no-gloves, goggles/no-goggles, no-mask (no positive mask class), safety shoes (no "no-shoes" class), excavator, wheel loader, dump truck | 7,450 train / 567 val images from 5 Roboflow Universe sources (Construction Site Safety, construction-safety-gsnvb, PPE detection 1, PPE_Dectection v4, excavators-czvg9), stated as CC BY 4.0 | AGPL-3.0 | **Own test set** (573 img): mAP50 0.634, mAP50-95 0.373, P 0.754, R 0.604. Per-class mAP50: no-hardhat 0.379, no-safety vest 0.522, no-goggles 0.208, no-gloves 0.074, no-mask 0.000. **Held-out benchmark** (284 img = Construction-PPE val+test, "core" = person/hardhat/no-hardhat/vest): 0.642, vs killuminati1 0.543, wesleymqsss 0.515, Hansung-Cho 0.503, melihuzunoglu 0.435, jashwanthpeddisetty 0.345, Hexmon 0.286, baskarmother 0.180 | v0.3 about 1 month ago, card edited 24 days ago ([files](https://huggingface.co/constructelligence/construction-site-safety-hazards/tree/main)); benchmark dated October 2026 | Benchmark run by the author. Test splits come from the same sources as training. Some person boxes were pseudo-labelled with COCO YOLOv8s. Weak no-gloves, no-goggles and no-mask. The commit message says "15 classes" but the card lists 14. **SafetyVision and CHD were not in its benchmark** |
+| N2 | [badmuriss/ppe-detection-yolov8s](https://huggingface.co/badmuriss/ppe-detection-yolov8s) | YOLOv8s-P2 (extra stride-4 head) @960 | `best.pt` 43.2 MB ([files](https://huggingface.co/badmuriss/ppe-detection-yolov8s/tree/main)) | 4: helmet, vest, head (meaning no helmet), no_vest | 6 Roboflow Universe sets (PPE Combined Model, Hard Hats, Hard Hat Universe, Safety Vests, vest-qf3av, vest-pbrbu), 36,574 images after dedup. Per-source licenses not listed | AGPL-3.0 | **Val:** mAP50 0.806, mAP50-95 0.556. **Test** (1,828 img) per-class mAP50: helmet 0.975, vest 0.901, head 0.939, no_vest 0.650 (only 20 GT boxes) | 3 months ago ([files](https://huggingface.co/badmuriss/ppe-detection-yolov8s/tree/main)) | Hardhat and vest only. no_vest is statistically thin. Recall falls sharply on small objects (no_vest recall 0.090 at 0.2x scale). Real-domain recall not measured (per card) |
+| N3 | [jashwanthpeddisetty0712/ppe-detection-yolov8m](https://huggingface.co/jashwanthpeddisetty0712/ppe-detection-yolov8m) | YOLOv8m @640 | `best.pt` referenced in the card (file list not verified) | Same 14 classes as Hexmon (5 pairs + Fall-Detected, Ladder, Safety Cone, Person) | Not named; no license | AGPL-3.0 | **Val** (22,077 instances): mAP50 0.79, mAP50-95 0.53. NO-Safety Vest mAP50 0.21, NO-Gloves 0.91, NO-Goggles 0.96. On N1's benchmark: core 0.345 | Jul 24 ([listing](https://huggingface.co/models?search=ppe&sort=downloads)) | Probably trained on the same PPE-Combined data as Hexmon (inferred from the identical taxonomy, unverified). Validation only |
+| N4 | [abdullahzunorain/rt-detr-v2-fine-tuned-PPE-Det](https://huggingface.co/abdullahzunorain/rt-detr-v2-fine-tuned-PPE-Det) | RT-DETRv2 R50vd (HF Transformers), input 800x1333 | `best_model.pt` (PyTorch checkpoint, not Ultralytics) | 11: person; helmet, coverall, boot, glove and eyewear each `_present`/`_absent` | 3,200 CCTV images from **one facility**; no license stated | MIT tag (base-model license not stated) | **Val** (964 img): mAP50 0.623, mAP50-95 0.397 | May 16 ([listing](https://huggingface.co/models?search=ppe+detr)) | Single-site data. Not Ultralytics-compatible (needs a Transformers loader). Weak glove and eyewear classes |
+| N5 | [haroonx02/construction-ppe-yolo11n](https://huggingface.co/haroonx02/construction-ppe-yolo11n) | YOLO11n @640 | `yolo11n_ppe.pt` 5.5 MB, plus ONNX FP32/FP16/INT8 | 10: Hardhat/NO-Hardhat, Mask/NO-Mask, Safety Vest/NO-Safety Vest, Person, Safety Cone, machinery, vehicle | Roboflow "Construction Site Safety" (2,605 train images), CC BY 4.0 | AGPL-3.0 | **Test** (82 img): mAP50 0.713, mAP50-95 0.413. "Clean" 40-image subset: 0.671 / 0.384 | 6 days ago ([listing](https://huggingface.co/models?search=ppe&sort=modified)) | Author says half the test images share source videos with training. Tiny test set. About 1/3 of violators missed. Labelled "a learning project, not a safety system" |
+| N6 | [TechsphereAI/FactoryVision-PPE-YOLO](https://huggingface.co/TechsphereAI/FactoryVision-PPE-YOLO) | YOLO11n @640 | `model.pt` | 10 classes, names not on the card (listed in `labels.json`, not checked) | Construction Site Safety (Snehil Sanyal / Roboflow, CC BY 4.0 per card) | **None assigned** (card warns about AGPL) | **Test** (82 img): mAP50 0.705, mAP50-95 0.393, R 0.640 | 5 days ago ([listing](https://huggingface.co/models?search=ppe&sort=modified)) | Educational prototype. Same small test set as N5 |
+| N7 | [mancalazure/construction-ppe-safety](https://huggingface.co/mancalazure/construction-ppe-safety) | YOLOv8n @640 | `best.pt`, plus ONNX for DeepStream/Triton | Same 10 classes as N5 | Roboflow construction-site-safety v28 + snehilsanyal set | CC BY 4.0 (card; questionable for Ultralytics-trained weights) | **None** ("No validation metrics are published here") | Sep 10 ([listing](https://huggingface.co/models?search=ppe&sort=downloads)) | No metrics. NO-Hardhat misses caps, beanies and hoods (per card) |
+| N8 | [wesleymqsss/yolov8m-construction-site-safety](https://huggingface.co/wesleymqsss/yolov8m-construction-site-safety) | YOLOv8m | `best.pt` referenced (unverified) | Same 10-class Construction Site Safety taxonomy (Portuguese names in card) | Kaggle snehilsanyal set (2,834 img); license not stated | MIT tag | Per-class table, **split not named** (131-image test set). On N1's benchmark: core 0.515 | Sep 20 ([listing](https://huggingface.co/models?search=construction+safety&sort=downloads)) | Unfinished card; tiny test set |
+| N9 | [thalostech2025/dfine-small-construction-ppe-v1](https://huggingface.co/thalostech2025/dfine-small-construction-ppe-v1) | D-FINE small (Transformers, 10.3M params) | safetensors | 12: Person, Hardhat/No-hardhat, Safety-vest/No-safety-vest, No-mask, No-goggles, Gloves, Safety-boots, 3 vehicles | `thalostech2025/construction-ppe-equipment-v1`, license not stated | Apache-2.0 | "Evaluation set": mAP50 0.460. No-safety-vest mAP 0.001, No-mask 0.000, No-goggles 0.000 | Jun 29 ([listing](https://huggingface.co/models?search=ppe&sort=downloads)) | Negative classes essentially non-functional |
+
+**GitHub repos with paired classes and weights in the repo.** All are small, and their numbers come from Construction-PPE runs.
+
+| Repo | Arch | Pairs | Weights | Metrics | License | Red flags |
+|---|---|---|---|---|---|---|
+| [AbdullahMG/ppe-detection](https://github.com/AbdullahMG/ppe-detection) | YOLO11n | helmet, goggles, gloves, boots (**no no_vest**) | `models/` folder; whether weights are committed is unconfirmed | Test (141 img, old Construction-PPE): mAP50 0.550, mAP50-95 0.265 | Repo license not stated | 0 stars, 4 commits |
+| [C-Nekopedia/SiteGuard](https://github.com/C-Nekopedia/SiteGuard) | YOLO26n | same 4 pairs (no no_vest) | `data/models/yolo26n_ppe.pt` per README (not verified) | mAP50 0.523, mAP50-95 0.270, split not stated | MIT code, weights not stated | 7 stars |
+| [evgomes/yolo26-construction-ppe-image-recognition](https://github.com/evgomes/yolo26-construction-ppe-image-recognition) | YOLO26n | same 4 pairs | `runs/train/ppe_yolo26n/weights/best.pt` | None published | Not shown | 1 star |
+| [BulletsHo/ppe-sentinel-yolo26](https://github.com/BulletsHo/ppe-sentinel-yolo26) | YOLO26 (n inferred) | 28 classes, only 6 named, so pairing unconfirmed | `outputs/.../best.pt` in repo | None in README | AGPL-3.0+ | Class list not visible |
+| [Ansarimajid/Construction-PPE-Detection](https://github.com/Ansarimajid/Construction-PPE-Detection) | YOLOv8 | Hardhat, Mask and Safety Vest pairs | `Model/ppe.pt` | None | MIT (code) | 51 stars. A `.env` file appears in the public tree; contents not examined. If the owner is contacted, it should be flagged to them |
+| [snehilsanyal/Construction-Site-Safety-PPE-Detection](https://github.com/snehilsanyal/Construction-Site-Safety-PPE-Detection) | YOLOv8n | Hardhat, Mask and Safety Vest pairs | `models/best.pt` | Plots only, no numbers | Not stated | 212 stars ([topic page](https://github.com/topics/ppe-detection?o=desc&s=stars)), 1 commit, last updated Aug 18, 2024 |
+
+**Also useful as evidence:** [nusRying/ai-safety-monitoring](https://github.com/nusRying/ai-safety-monitoring) (proprietary, no weights released) reports a YOLO26n trained for 50 epochs on the older 1,416-image Construction-PPE. On the test split (Ultralytics scoring) it got mAP50 0.549 overall, but **no_helmet 0.236, no_goggle 0.221, no_gloves 0.113 and no_boots 0.035**, against helmet 0.935 and vest 0.910.
+
+**Seen and excluded:**
+- Positive-only or two-class models:
+  - [Subh775/yolo26s-hardhat](https://huggingface.co/Subh775/yolo26s-hardhat): YOLO26s; head/helmet on Hard Hat Workers v5; test mAP50 0.980, mAP50-95 0.688; AGPL-3.0. It is a good hardhat-only specialist, where `head` acts as "no helmet".
+  - [leeyunjai/yolo26-helmet](https://huggingface.co/leeyunjai/yolo26-helmet): helmet / "face (no helmet)"; no license or dataset stated.
+- No metrics or wrong card:
+  - [leeyunjai/yolo11-ppe](https://huggingface.co/leeyunjai/yolo11-ppe): YOLO11x; helmet/no helmet/vest/no vest/person; card copied from a "number and operator" model; no metrics or license.
+  - [baskarmother/yolov8-ppe-construction](https://huggingface.co/baskarmother/yolov8-ppe-construction): no metrics.
+  - [akashpannala/ppe-compliance-yolov8](https://huggingface.co/akashpannala/ppe-compliance-yolov8): empty card.
+  - [sanrapi/rf-detr-finetuned-ppe](https://huggingface.co/sanrapi/rf-detr-finetuned-ppe): no card.
+- Not suitable:
+  - [qualcomm/PPE-Detection](https://huggingface.co/qualcomm/PPE-Detection): 2 output classes, proprietary dataset, no accuracy metrics, no `.pt` (ONNX/TFLite/QNN only).
+  - [arielshakaramiro/ppe-vision](https://huggingface.co/arielshakaramiro/ppe-vision): weights not published, "all-rights-reserved", trained partly on SH17.
+- **Security note:** [thalostech2025/thalos-industrial-ppe-v1](https://huggingface.co/thalostech2025/thalos-industrial-ppe-v1) has no metrics. Its card loads pickled weights with `torch.load` from a URL, and it ends with a section ("PHASE 4 — Ready for Cursor") written as instructions to an AI assistant. That text was treated as data and ignored. It is a possible prompt-injection pattern and should be reported to IT; do not use this repo.
+- Many HF repos updated in the last two weeks (`Targaryen101/ppe_*`, `CVCompressor/ppe_*`, `ScoreVision_ppe01`, `manako/...probe-set-winner` and others, [listing](https://huggingface.co/models?search=ppe&sort=modified)) have no cards. They look like automated competition uploads and were not evaluated.
+
+### R2.3 Roboflow, papers and Ultralytics
+
+- **Roboflow Universe:**
+  - No PPE project was found with a public direct `.pt` download.
+  - Roboflow's docs describe weight download only for models in **your own workspace**: Core/Free tier through the Python SDK, in `.pt` and ONNX among other formats. The page does not say that other users' public Universe models can be downloaded ([docs](https://docs.roboflow.com/deploy/download-roboflow-model-weights)).
+  - The same page notes that running AGPL YOLO weights commercially outside Roboflow needs an Enterprise license or AGPL compliance.
+  - The practical route is to fork a Universe dataset and train it yourself.
+  - The Roboflow PPE blog (May 18, 2026) trains RF-DETR Small and reports mAP50 79.2%, but it does not give a downloadable weight link, and its model link title ("traffic-light-detection") does not match ([blog](https://roboflow.com/blog/ppe-detection)).
+  - RF-DETR is mostly Apache-2.0, but some sizes fall under a Platform Model License (per a web search of Roboflow's [license page](https://roboflow.com/model-licenses/rf-detr); the sources conflict and this is unverified).
+- **Papers 2024–2026:**
+  - No 2025–2026 PPE paper with **released weights** and paired classes was found.
+  - SH17's journal version is in the *Journal of Safety Science and Resilience*, June 2025 issue ([DOAJ](https://doaj.org/article/d5155a83f94942b299109f67d9f9abea)). No follow-up release was found.
+  - A 2026 MDPI *Buildings* study on real/synthetic data mixing compares YOLO11s and RT-DETR-L ([doi](https://doi.org/10.3390/buildings16102034); full text returned 403, so whether code or weights were released is unverified).
+  - An ETASR low-light PPE violation dataset (11,407 images, with compliance/non-compliance pairs) was seen only in a search snippet ([link](https://etasr.com/index.php/ETASR/article/view/14254)); weights and license are unverified.
+- **Ultralytics Construction-PPE:**
+  - The current docs give 1,000 images (800 train / 200 val, no test split), 12 classes including `no_vest` (id 11), and CC BY 4.0 for images and annotations ([docs](https://docs.ultralytics.com/datasets/detect/construction-ppe/), [YAML](https://raw.githubusercontent.com/ultralytics/ultralytics/main/ultralytics/cfg/datasets/construction-ppe.yaml)).
+  - The blog says it was released on Nov 3, 2026, in Ultralytics 8.4.200 ([blog](https://www.ultralytics.com/blog/missing-ppe-detection-yolo)).
+  - **Ultralytics does not publish a pretrained model on it.** Its examples train from `yolo26n.pt` ([docs](https://docs.ultralytics.com/datasets/detect/construction-ppe/), [blog](https://www.ultralytics.com/blog/missing-ppe-detection-yolo)).
+  - **Version conflict.** Several 2025–2026 repos describe an earlier version with 1,416 images (1,132 / 143 / 141), 11 classes including `none` and **no `no_vest`** ([AbdullahMG](https://github.com/AbdullahMG/ppe-detection), [SiteGuard](https://github.com/C-Nekopedia/SiteGuard), [nusRying](https://github.com/nusRying/ai-safety-monitoring)). This explains the round-1 contradiction.
+  - The docs text and staff comments also say there is no missing-vest class, which contradicts the YAML ([docs](https://docs.ultralytics.com/datasets/detect/construction-ppe/)).
+  - Confirm which version the downloaded zip contains before using it.
+
+### R2.4 Verdict: is anything likely better than SafetyVision v2 / CHD?
+
+**No candidate shows published evidence that it is better.**
+
+- **N1 (constructelligence)** is the most interesting new find.
+  - It covers almost the same pairs as SafetyVision: hardhat, vest, gloves and goggles, plus safety shoes.
+  - It publishes test-split metrics and a cross-dataset benchmark on Construction-PPE, which is more than most cards offer. In that benchmark it beats Hexmon (0.642 vs 0.286 core mAP50), the current model in round 1, and 7 other models ([source](https://huggingface.co/constructelligence/construction-site-safety-hazards)).
+  - But its own-test mAP50 (0.634) is lower than SafetyVision v2's (0.766) on a different test set.
+  - Its negative classes are weak: no-gloves 0.074, no-goggles 0.208, no-hardhat 0.379, no-mask 0.
+  - SafetyVision and CHD were not in its benchmark.
+  - Treat it as a candidate worth adding to a head-to-head test, not as a replacement.
+- **N2 (badmuriss)** has strong hardhat/head numbers on its own test split, but only 4 classes, and its no_vest result rests on 20 boxes. It is a possible hardhat/vest specialist alternative to CHD. It is not better on evidence, because the datasets differ.
+- **The rest** (N3–N9 and the GitHub repos) have validation-only, tiny-test or no metrics, or they show that the negative classes fail.
+- **Uncertainty:** every number above comes from a different dataset and split (own test, own val, Construction-PPE val+test, 82-image or 141-image tests), so **none are comparable**.
+  - SafetyVision's 0.766 and CHD's val 0.60–0.67 mAP50-95 are also on their own data.
+  - Only a shared benchmark can rank these models: the same images, a class remap, and the same imgsz.
+  - The current choices stay in place on the strength of their documentation, not because they were proven better.
+
+### R2.5 Is fine-tuning on Construction-PPE (+ CC BY sets) the more reliable path?
+
+**Not on Construction-PPE alone.**
+
+- It is small (1,000 images in the current version).
+- Published runs on the earlier version give weak negative classes: overall test mAP50 of 0.523–0.550 at nano size, and no_boots 0.035 / no_gloves 0.113 ([nusRying](https://github.com/nusRying/ai-safety-monitoring), [AbdullahMG](https://github.com/AbdullahMG/ppe-detection), [SiteGuard](https://github.com/C-Nekopedia/SiteGuard)).
+- Its real value is as a **CC BY 4.0, independent yardstick**: none of SafetyVision, CHD or N1 says it trained on it (for N1, per its [card](https://huggingface.co/constructelligence/construction-site-safety-hazards)).
+
+**Suggested plan (estimate, not validated):**
+1. **Benchmark first.** Remap Construction-PPE val (and test, if present) to the app taxonomy. Run `model.val()` at each model's native imgsz on SafetyVision v2, CHD YOLO26s/l and N1, and optionally N2 for hardhat/vest. Report per-pair recall and precision on the `no_*` classes, then add a hand-labelled clip set from the target domain. This alone may settle the default.
+2. **Fine-tune only if the benchmark shows a gap.**
+   - Start from the best checkpoint (SafetyVision `v2/best.pt`, or `yolo26s.pt`).
+   - Train on a merged, class-remapped mix of:
+     - Construction-PPE train
+     - CC BY 4.0 Roboflow sets, re-checking each license on its page (N1's list is a starting point: Construction Site Safety, construction-safety-gsnvb, PPE detection 1, PPE_Dectection v4)
+     - Hard Hat Workers (`head` as no-helmet)
+   - Deduplicate across sources (perceptual hash) so the evaluation images don't leak into training.
+3. **Keep a fixed held-out set** that is never trained on: Construction-PPE val plus the target clips. Use it as acceptance criteria, for example minimum recall per `no_*` class, set by the project owner.
+4. **Weight the negative classes.** Oversample images that contain `no_*` boxes. Consider rule-based "missing PPE" inference from person + absent item as a fallback for weak pairs (gloves, goggles, boots).
+5. **Record the outcome.** Write down dataset licenses (attribution for CC BY), the AGPL-3.0 status of the resulting weights, and the fact that the results are a screening signal that needs qualified human review.
