@@ -70,19 +70,23 @@ Hugging Face.
 
 ## Results
 
-Example run on [`samples/ppe_demo_input_30s.mp4`](samples/README.md) (two real-time Pexels clips, 906 frames)
-with the default `safetyvision` model, person `conf=0.45`, `--no-vlm`, on CPU (about 5 minutes):
+Example run on [`samples/ppe_demo_input.mp4`](samples/README.md) (four real-time Pexels clips:
+construction site, warehouse aisle, industrial structure, lumber warehouse; 1,598 frames, ~53 s)
+with the default `safetyvision` model, person `conf=0.45`, `--no-vlm`, on CPU (about 7 minutes):
 
 | File | Content |
 |---|---|
-| [`results/ppe_demo_safetyvision.mp4`](results/ppe_demo_safetyvision.mp4) | Annotated video (720p): person boxes in red when an infraction is associated, PPE items in green, infractions in red. |
-| [`results/report_safetyvision.json`](results/report_safetyvision.json) | Consolidated report: 26 tracked IDs with infractions (25 × NO-Safety Vest, 6 × NO-Hardhat, 1 × NO-Goggles). |
+| [`results/ppe_demo_safetyvision.mp4`](results/ppe_demo_safetyvision.mp4) | Annotated video (720p, **played at 1.5× speed**; processing ran at the original speed): person boxes in red when an infraction is associated, PPE items in green, infractions in red. |
+| [`results/report_safetyvision.json`](results/report_safetyvision.json) | Consolidated report: 24 tracked IDs with infractions (23 × NO-Safety Vest, 8 × NO-Hardhat, 2 × NO-Goggles). |
+
+The GIF at the top shows the industrial-structure segment.
 
 Observations from this run (qualitative, not a validated evaluation):
 
-- Hardhats are detected on most workers on the construction site; missing vests are flagged on part of them.
-- The person model (`yolov8n`, 640 px) finds about 7–9 of the ~20 workers per frame in the crowded scene, so some workers are never checked.
-- In the warehouse clip one worker without a hardhat is not flagged, and a shelf in the foreground is still detected as a person (confidence up to 0.57).
+- Industrial structure: the worker with hardhat and vest stays green; the worker without a vest is flagged `NO-Safety Vest`. Missing gloves on the first worker are not flagged.
+- Construction site: hardhats are detected on most workers; missing vests are flagged on part of them. The person model (`yolov8n`, 640 px) finds about 7–9 of the ~20 workers per frame, so some workers are never checked.
+- Warehouse aisle: one worker without a hardhat is not flagged, and a shelf in the foreground is detected as a person (confidence up to 0.57).
+- Lumber warehouse: the spotter's vest is detected; the forklift operator (no vest, no hardhat) is not flagged.
 - Tracker ID switches inflate the per-person count.
 
 ## Usage
@@ -110,7 +114,7 @@ python -m ppe_compliance analyze --input video.mp4 --output report.json --no-vlm
     --infractions no-hardhat "no-safety vest"
 python -m ppe_compliance analyze --input video.mp4 --output report.json --ppe-model chd
 # also write the annotated video
-python -m ppe_compliance analyze --input samples/ppe_demo_input_30s.mp4 --output outputs/report.json \
+python -m ppe_compliance analyze --input samples/ppe_demo_input.mp4 --output outputs/report.json \
     --save-video outputs/ppe_demo_annotated.mp4
 ```
 
