@@ -70,19 +70,20 @@ Hugging Face.
 
 ## Results
 
-Example run on [`samples/ppe_demo_input_30s.mp4`](samples/README.md) (two Pexels clips, 913 frames)
-with the default `safetyvision` model, `--no-vlm`, on CPU (about 5 minutes):
+Example run on [`samples/ppe_demo_input_30s.mp4`](samples/README.md) (two real-time Pexels clips, 906 frames)
+with the default `safetyvision` model, person `conf=0.45`, `--no-vlm`, on CPU (about 5 minutes):
 
 | File | Content |
 |---|---|
 | [`results/ppe_demo_safetyvision.mp4`](results/ppe_demo_safetyvision.mp4) | Annotated video (720p): person boxes in red when an infraction is associated, PPE items in green, infractions in red. |
-| [`results/report_safetyvision.json`](results/report_safetyvision.json) | Consolidated report: 46 tracked IDs with infractions (45 × NO-Safety Vest, 5 × NO-Hardhat, 2 × NO-Goggles). |
+| [`results/report_safetyvision.json`](results/report_safetyvision.json) | Consolidated report: 26 tracked IDs with infractions (25 × NO-Safety Vest, 6 × NO-Hardhat, 1 × NO-Goggles). |
 
 Observations from this run (qualitative, not a validated evaluation):
 
-- Hardhats and missing vests on the construction site are picked up on most workers.
-- In the warehouse clip one worker without a hardhat is not flagged, and a shelf in the foreground is detected as a person.
-- The number of IDs (46) is about twice the number of people: the tracker switches IDs in the crowded scene, so per-person counts are inflated.
+- Hardhats are detected on most workers on the construction site; missing vests are flagged on part of them.
+- The person model (`yolov8n`, 640 px) finds about 7–9 of the ~20 workers per frame in the crowded scene, so some workers are never checked.
+- In the warehouse clip one worker without a hardhat is not flagged, and a shelf in the foreground is still detected as a person (confidence up to 0.57).
+- Tracker ID switches inflate the per-person count.
 
 ## Usage
 
