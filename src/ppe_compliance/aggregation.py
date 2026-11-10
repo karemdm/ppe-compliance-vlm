@@ -6,7 +6,7 @@ The pipeline feeds it with *confirmed* violations (after the temporal rule of
 
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Any, Dict, FrozenSet, Iterable, List, Optional
+from typing import Any, Dict, FrozenSet, Iterable, List, Optional, Tuple
 
 
 @dataclass
@@ -36,12 +36,15 @@ class PersonRecord:
         label_sets: Number of frames per exact set of labels. It lets
             :meth:`PersonInfractionAggregator.select_reports` restrict the
             report to a subset of labels without reprocessing the video.
+        label_crops: Per label, ``(appearance number, crop)`` of the most
+            recent frame with that label (used for the crop of a filtered report).
     """
 
     appearances: int = 0
     ppe_counts: Dict[str, int] = field(default_factory=dict)
     latest_crop: Any = None
     label_sets: Counter = field(default_factory=Counter)
+    label_crops: Dict[str, Tuple[int, Any]] = field(default_factory=dict)
 
 
 @dataclass
@@ -90,6 +93,7 @@ class PersonInfractionAggregator:
         labels = list(dict.fromkeys(item.missing_ppes))
         for label in labels:
             record.ppe_counts[label] = record.ppe_counts.get(label, 0) + 1
+            record.label_crops[label] = (record.appearances, item.crop)
         record.label_sets[frozenset(labels)] += 1
 
     def update_many(self, items: Iterable[FrameInfraction]) -> None:
@@ -114,7 +118,8 @@ class PersonInfractionAggregator:
 
         When ``labels`` is given (case-insensitive), the statistics are
         recomputed as if only those items had been monitored: a frame counts
-        as an appearance only if it contains at least one of them. Items are
+        as an appearance only if it contains at least one of them, and the
+        crop is the latest one of a frame with one of them. Items are
         confirmed independently of each other, so this gives the same result
         as processing the video with that filter and the UI can change the
         filter without running the models again.
@@ -130,7 +135,7 @@ class PersonInfractionAggregator:
         wanted: Optional[FrozenSet[str]] = None if labels is None else frozenset(x.lower() for x in labels)
         reports: List[PersonReport] = []
         for person_id, record in self._records.items():
-            appearances, counts = _filtered_stats(record, wanted)
+            appearances, counts, crop = _filtered_stats(record, wanted)
             if appearances < min_appearances:
                 continue
             kept = {
@@ -146,7 +151,7 @@ class PersonInfractionAggregator:
                     appearances=appearances,
                     infractions=list(kept),
                     ppe_counts=kept,
-                    crop=record.latest_crop,
+                    crop=crop,
                 )
             )
         return reports
@@ -154,21 +159,24 @@ class PersonInfractionAggregator:
 
 def _filtered_stats(
     record: PersonRecord, wanted: Optional[FrozenSet[str]]
-) -> "tuple[int, Dict[str, int]]":
-    """Return ``(appearances, per-label counts)`` restricted to ``wanted``.
+) -> Tuple[int, Dict[str, int], Any]:
+    """Return ``(appearances, per-label counts, latest crop)`` restricted to ``wanted``.
 
     Args:
         record: Person record.
         wanted: Lower-case labels to keep, or ``None`` for all labels.
 
     Returns:
-        Appearances and label counts (labels in first-seen order).
+        Appearances, label counts (labels in first-seen order) and the crop of
+        the most recent frame with a wanted label (``None`` if there is none).
     """
     if wanted is None:
-        return record.appearances, dict(record.ppe_counts)
+        return record.appearances, dict(record.ppe_counts), record.latest_crop
     appearances = sum(n for s, n in record.label_sets.items() if any(x.lower() in wanted for x in s))
     counts = {label: c for label, c in record.ppe_counts.items() if label.lower() in wanted}
-    return appearances, counts
+    latest = [record.label_crops[label] for label in counts]
+    crop = max(latest, key=lambda entry: entry[0])[1] if latest else None
+    return appearances, counts, crop
 
 
 def total_infractions(reports: Iterable[PersonReport]) -> int:

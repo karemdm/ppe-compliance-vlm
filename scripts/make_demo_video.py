@@ -282,6 +282,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = build_parser().parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     cap = cv2.VideoCapture(args.input)
+    if not cap.isOpened():
+        raise IOError(f"Cannot open video: {args.input}")
     fps = video_fps(cap)
     size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
     cap.release()
@@ -324,9 +326,11 @@ def main(argv: Optional[List[str]] = None) -> int:
                 continue
             if det.box[3] - det.box[1] < args.min_crop_height:
                 continue
+            crop = crop_box(detector.last_frame, det.box)
+            if crop.size == 0:
+                continue
             seen.add(det.track_id)
             last_check_t = t
-            crop = crop_box(detector.last_frame, det.box)
             info = {"number": len(checks) + 1, "total": args.max_vlm_checks, "track_id": det.track_id,
                     "violations": list(status.confirmed_violations), "model": vlm_name}
             logger.info("VLM check %d: person #%d %s", info["number"], det.track_id, info["violations"])

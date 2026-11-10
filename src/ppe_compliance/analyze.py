@@ -16,7 +16,7 @@ from .aggregation import PersonInfractionAggregator, total_infractions
 from .cli import add_pipeline_args, build_configs
 from .detector import PPEDetector
 from .models import PPE_MODELS, get_model_spec, parse_infractions
-from .pipeline import process_video
+from .pipeline import process_video, video_fps
 from .vlm import VLMReporter, fallback_description
 
 logger = logging.getLogger(__name__)
@@ -51,7 +51,8 @@ def _open_writer(path: str, input_path: str, first_frame: Any) -> Any:
 
     Args:
         path: Output video path (parent folders are created).
-        input_path: Input video, used to read its frame rate.
+        input_path: Input video, used to read its frame rate (see
+            :func:`pipeline.video_fps`).
         first_frame: First annotated frame, used for the output size.
 
     Returns:
@@ -65,7 +66,7 @@ def _open_writer(path: str, input_path: str, first_frame: Any) -> Any:
     import cv2
 
     cap = cv2.VideoCapture(input_path)
-    fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+    fps = video_fps(cap)
     cap.release()
     height, width = first_frame.shape[:2]
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
@@ -94,6 +95,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         detector_cfg, report_cfg, vlm_cfg, temporal_cfg = build_configs(args)
     except ValueError as exc:
         parser.error(str(exc))
+    if not Path(args.input).is_file():
+        parser.error(f"input video not found: {args.input}")
 
     detector = PPEDetector(detector_cfg)
     aggregator = PersonInfractionAggregator()
@@ -113,6 +116,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         if writer is not None:
             writer.release()
             logger.info("Annotated video saved to %s", args.save_video)
+    if args.save_video and writer is None:
+        logger.warning("No frame decoded: annotated video not written (%s)", args.save_video)
 
     reports = aggregator.select_reports(report_cfg.min_appearances, report_cfg.min_ratio)
     reporter = None if args.no_vlm else VLMReporter(vlm_cfg)

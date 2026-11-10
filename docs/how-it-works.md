@@ -129,7 +129,7 @@ After adding the frame at time `t`, with `t₀` the first time the track was see
 
 ```
 if t - t₀ < W:                     keep state (not present long enough)
-elif m = 0 or m / n < min_coverage: keep state (too little evidence)
+elif m < min_frames or m / n < min_coverage: keep state (too little evidence)
 elif n⁻ / m ≥ min_majority:          state = VIOLATION
 elif n⁺ / m ≥ min_majority:          state = OK
 else:                                keep state
@@ -163,6 +163,7 @@ frames changes nothing.
 | `min_majority` | `--min-majority` | 0.6 | share of informative frames the winning side needs |
 | `min_coverage` | `--min-coverage` | 0.3 | minimum `m / n`; below it the state is kept |
 | `lost_seconds` | `--lost-seconds` | 2.0 | gap after which a track's history is dropped |
+| `min_frames` | `--min-frames` | 5 | minimum informative frames `m` in the window before any change |
 
 ## 5. Aggregation and selection
 
@@ -173,7 +174,8 @@ detections. For each track id it keeps:
 - `appearances` — number of frames in which the person had **at least one**
   confirmed violation (other frames are not counted);
 - `ppe_counts[label]` — number of frames with that label;
-- `latest_crop` — person crop from the most recent such frame.
+- `latest_crop` — person crop from the most recent such frame (and, per
+  label, the crop of the most recent frame with that label).
 
 After the video, a person is reported when
 
@@ -191,7 +193,8 @@ before being lost.
 
 The app processes the video once with all items and filters the report by
 the selected infractions afterwards (`select_reports(labels=...)`, case
-insensitive). Items are confirmed independently, so this equals processing
+insensitive); the report crop is then the latest one of a frame with a
+selected label. Items are confirmed independently, so this equals processing
 with that filter.
 
 ## 6. VLM report
@@ -236,7 +239,7 @@ agree with the detector; it is a description, not an independent check.
 | `min_appearances` | 3 | fewer, more persistent reports (confirmed frames) |
 | `min_ratio` | 0.10 | fewer labels per report |
 
-Only the tracker, the person weights, the PPE model and its confidence, the
+Only the tracker, the person weights and confidence, the PPE model and its confidence, the
 temporal rule, the report thresholds and the VLM model are exposed on the
 command line; the other values live in the dataclasses of
 `src/ppe_compliance/config.py` and `src/ppe_compliance/temporal.py`.
@@ -262,8 +265,8 @@ command line; the other values live in the dataclasses of
   must also keep the same id, see the first tip).
 - **Slow processing:** the two YOLO models run on every frame; a GPU helps.
   `chd` (YOLO26-L) is larger than `safetyvision` (YOLOv8s), but
-  `safetyvision` runs at `imgsz` 896.
+  `safetyvision` runs at `imgsz` 896. The VLM runs only once per reported
+  person at the end.
 - **Gloves, goggles, harness or falls needed:** only `safetyvision` has these
   classes. Its author reports `NO-Safety Vest` as weak; do not rely on it
   alone for vest compliance.
-  The VLM runs only once per reported person at the end.

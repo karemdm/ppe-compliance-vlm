@@ -39,5 +39,6 @@ are compared with the registry and a warning is logged if they differ.
 
 ## VLM
 
-The report text uses `HuggingFaceM4/idefics2-8b` (Apache-2.0), downloaded at
-runtime by `transformers` and not stored here.
+The report text uses `HuggingFaceM4/idefics2-8b` (Apache-2.0) by default, or the
+model given with `--vlm-model` (e.g. `HuggingFaceTB/SmolVLM-500M-Instruct`,
+Apache-2.0). It is downloaded at runtime by `transformers` and not stored here.

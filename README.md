@@ -42,9 +42,11 @@ Full video: [`results/demo_vlm_doublecheck.mp4`](results/demo_vlm_doublecheck.mp
 - Per-person consolidation of confirmed violations with appearance and ratio
   thresholds.
 - VLM report text per person (lazy-loaded; optional with `--no-vlm`).
-- Results cached in the Streamlit session; recomputed when the video,
-  PPE model, selected infractions or tracker change.
-- Headless `analyze` subcommand that writes a JSON report.
+- Results cached in the Streamlit session: the video is processed once per
+  video, PPE model and tracker; changing the selected infractions only
+  re-filters the cached reports (VLM texts are cached too).
+- Headless `analyze` subcommand that writes a JSON report (and, with
+  `--save-video`, the annotated video).
 - Selectable tracker config: Ultralytics `bytetrack.yaml` (default) or
   `configs/bytetrack_custom.yaml`.
 
@@ -79,9 +81,10 @@ Event classes such as `Fall-Detected` only have a *not worn* side.
 
 - Nothing changes until the person has been tracked for `--confirm-seconds`
   (3 s); the box is gray (`#id checking`).
-- Over the last 3 s, if at least 30% of the frames are informative (worn or
-  not worn) and at least 60% of those say *not worn*, the item becomes a
-  **violation** (red). If 60% say *worn*, it becomes **OK** (green).
+- Over the last 3 s, if at least 30% of the frames (and at least
+  `--min-frames`, 5) are informative (worn or not worn) and at least 60% of
+  those say *not worn*, the item becomes a **violation** (red). If 60% say
+  *worn*, it becomes **OK** (green).
 - Otherwise the previous state is kept. Unknown frames never flip a state, so
   a short burst of contradicting frames is ignored.
 - A track unseen for 2 s is forgotten.
@@ -214,6 +217,7 @@ Run `ppe-compliance --help` and `ppe-compliance analyze --help` for all options.
 | `--no-vlm` | off | Use the template sentence instead of the VLM |
 | `--infractions` (analyze) | all supported by the model | Infractions to monitor (sidebar in the app) |
 | `--input` / `--output` (analyze) | required | Input video / output JSON |
+| `--save-video` (analyze) | off | Also write the annotated video (mp4v, input FPS and size) to this path |
 
 Other fixed defaults in `src/ppe_compliance/config.py`: person
 `iou=0.20`, class `0`; PPE `iou=0.20`, `imgsz` from the model
@@ -263,7 +267,8 @@ confirmed by the temporal rule.
 ```
 ppe-compliance-vlm/
   configs/bytetrack_custom.yaml   # optional tracker config
-  docs/how-it-works.md
+  docs/how-it-works.md            # pipeline details and formulas
+  docs/model-and-data-research.md # dated research log (models, datasets, clips)
   src/ppe_compliance/
     __init__.py  __main__.py
     cli.py          # entry point: launches Streamlit or runs `analyze`
@@ -279,6 +284,8 @@ ppe-compliance-vlm/
     models.py       # PPE model registry and paired class mapping (stdlib)
     config.py       # dataclass defaults and path helpers (stdlib)
   scripts/make_demo_video.py  # renders the demo video with VLM double-check freezes
+  samples/          # input clips + README (sources, licenses)
+  results/          # example outputs (annotated videos, JSON reports) + README
   tests/            # tests for the pure-logic modules
   weights/          # yolov8n.pt, safetyvision_v2_yolov8s.pt, chd_yolo26l.pt + README
 ```

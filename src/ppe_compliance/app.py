@@ -39,7 +39,7 @@ def load_detector(ppe_model: str) -> PPEDetector:
 @st.cache_resource
 def load_reporter(model_id: str) -> VLMReporter:
     """Create the (lazily loaded) VLM reporter once per Streamlit server."""
-    return VLMReporter(vlm_cfg)
+    return VLMReporter(replace(vlm_cfg, model_id=model_id))
 
 
 st.set_page_config(page_title="PPE Compliance VLM", layout="wide", initial_sidebar_state="expanded")
@@ -113,16 +113,21 @@ if state.aggregator is None:
     recent_logs: list = []
     last_ui = 0.0
     status_text.info("Processing video...")
-    for step in process_video(detector, tmp.name, None, temporal_cfg):
-        aggregator.update_many(step.infractions)
-        recent_logs = (recent_logs + step.logs)[-MAX_LOG_LINES:]
-        now = time.time()
-        if now - last_ui > UI_REFRESH_S or step.index == step.total:
-            frame_placeholder.image(bgr_to_rgb(step.annotated), channels="RGB", width="stretch")
-            progress_bar.progress(min(step.index / step.total, 1.0))
-            log_box.text_area("Live logs", "\n".join(recent_logs), height=250, label_visibility="collapsed")
-            last_ui = now
-    Path(tmp.name).unlink(missing_ok=True)
+    try:  # a Streamlit rerun interrupts this loop: always remove the temporary file
+        for step in process_video(detector, tmp.name, None, temporal_cfg):
+            aggregator.update_many(step.infractions)
+            recent_logs = (recent_logs + step.logs)[-MAX_LOG_LINES:]
+            now = time.time()
+            if now - last_ui > UI_REFRESH_S or step.index == step.total:
+                frame_placeholder.image(bgr_to_rgb(step.annotated), channels="RGB", width="stretch")
+                progress_bar.progress(min(step.index / step.total, 1.0))
+                log_box.text_area("Live logs", "\n".join(recent_logs), height=250, label_visibility="collapsed")
+                last_ui = now
+    except IOError as exc:
+        status_text.error(str(exc))
+        st.stop()
+    finally:
+        Path(tmp.name).unlink(missing_ok=True)
     progress_bar.progress(1.0)
     state.aggregator = aggregator
 

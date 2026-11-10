@@ -147,7 +147,11 @@ class VLMReporter:
         inputs = self._processor(
             text=[prompt], images=[bgr_to_pil(crop_bgr)], padding=True, return_tensors="pt"
         )
-        inputs = {k: v.to(self._device) for k, v in inputs.items()}
+        dtype = self._model.dtype  # fp16 on CUDA: pixel values must match the weights
+        inputs = {
+            k: v.to(self._device, dtype=dtype) if v.is_floating_point() else v.to(self._device)
+            for k, v in inputs.items()
+        }
         tokenizer = self._processor.tokenizer
         with torch.no_grad():
             output = self._model.generate(

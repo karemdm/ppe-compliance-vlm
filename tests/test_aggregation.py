@@ -98,3 +98,12 @@ def test_label_filter_is_case_insensitive():
     (report,) = agg.select_reports(3, 0.10, labels=["no-hardhat"])
     assert report.infractions == ["NO-Hardhat"]
     assert report.appearances == 3
+
+
+def test_label_filter_uses_latest_crop_of_wanted_labels():
+    agg = PersonInfractionAggregator()
+    _feed(agg, 1, [["NO-Hardhat"], ["NO-Hardhat"], ["NO-Hardhat", "NO-Mask"], ["NO-Mask"], ["NO-Mask"]])
+    (report,) = agg.select_reports(3, 0.10, labels=["no-hardhat"])
+    assert report.crop == "crop-1-2"  # last frame with NO-Hardhat, not the last frame overall
+    (report,) = agg.select_reports(3, 0.10)
+    assert report.crop == "crop-1-4"
