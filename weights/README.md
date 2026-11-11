@@ -30,7 +30,7 @@ so a missing file raises an error.
 | `chd` | Hardhat, Mask, NO-Hardhat, NO-Mask, NO-Safety Vest, Person, Safety Cone, Safety Vest, machinery, utility pole, vehicle | 640 (used on the model card) |
 
 The mapping of these classes to PPE items (worn / missing pairs) is defined
-in `src/ppe_compliance/models.py`. When a model is loaded, its class names
+in `src/ppe_compliance/detection/models.py`. When a model is loaded, its class names
 are compared with the registry and a warning is logged if they differ.
 
 > **License note:** both PPE models are published under AGPL-3.0 by their
