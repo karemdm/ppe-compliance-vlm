@@ -2,8 +2,9 @@
   "input": "outputs/demo_input.mp4",
   "output": "results/demo_vlm_doublecheck.mp4",
   "vlm_model": "HuggingFaceTB/SmolVLM-500M-Instruct",
-  "vlm_load_seconds": 7.58,
+  "vlm_load_seconds": 13.24,
   "torch_threads": 8,
+  "device": "CPU",
   "ppe_model": "safetyvision",
   "temporal": {
     "window_seconds": 3.0,
@@ -15,45 +16,48 @@
   "checks": [
     {
       "check": 1,
+      "person_id": 3,
       "track_id": 3,
-      "frame_index": 94,
-      "input_time_s": 3.1,
+      "frame_index": 96,
+      "input_time_s": 3.17,
       "violations": [
         "NO-Safety Vest"
       ],
       "crop_size": [
-        127,
-        371
+        128,
+        368
       ],
-      "elapsed_seconds": 15.04,
+      "elapsed_seconds": 14.67,
       "answer": "Yes."
     },
     {
       "check": 2,
+      "person_id": 5,
       "track_id": 7,
-      "frame_index": 185,
-      "input_time_s": 6.13,
+      "frame_index": 186,
+      "input_time_s": 6.17,
       "violations": [
         "NO-Safety Vest"
       ],
       "crop_size": [
-        197,
-        310
+        201,
+        313
       ],
-      "elapsed_seconds": 20.51,
-      "answer": "No safety vest found."
+      "elapsed_seconds": 23.55,
+      "answer": "No safety vest found on this person at work, but no other visible items were also removed from their body for that reason as well."
     },
     {
       "check": 3,
+      "person_id": 7,
       "track_id": 9,
-      "frame_index": 276,
-      "input_time_s": 9.17,
+      "frame_index": 277,
+      "input_time_s": 9.2,
       "violations": [
         "NO-Safety Vest"
       ],
       "crop_size": [
-        159,
-        480
+        158,
+        479
       ],
       "elapsed_seconds": 14.68,
       "answer": "No safety vest present."

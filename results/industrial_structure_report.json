@@ -22,34 +22,58 @@
       "min_coverage": 0.3,
       "lost_seconds": 2.0,
       "min_frames": 5
+    },
+    "reid": {
+      "enabled": true,
+      "embedder": "histogram",
+      "threshold": 0.85,
+      "margin": 0.03,
+      "min_samples": 3,
+      "max_pending_seconds": 0.5,
+      "max_absence_seconds": 0.0,
+      "gallery_size": 30,
+      "sample_seconds": 0.2,
+      "min_box_height": 64,
+      "max_overlap": 0.3
     }
+  },
+  "reid_summary": {
+    "tracks_assigned": 2,
+    "tracks_reidentified": 0,
+    "persons": 2
   },
   "persons_with_infractions": 2,
   "total_consolidated_infractions": 2,
   "persons": [
     {
       "person_id": 1,
-      "appearances": 152,
+      "track_ids": [
+        1
+      ],
+      "appearances": 150,
       "infractions": [
         "NO-Safety Vest"
       ],
       "infraction_counts": {
-        "NO-Safety Vest": 152
+        "NO-Safety Vest": 150
       },
-      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
-      "description_source": "template"
+      "description": "Yes, it's double checked that there was no safety vest present on this man during his work shift at hand equipment repair shop near downtown Oklahoma City.  He also had gloves with him as well which are often used for protection against chemicals but would be useless if he were to get hurt while using some",
+      "description_source": "HuggingFaceTB/SmolVLM-500M-Instruct"
     },
     {
       "person_id": 2,
-      "appearances": 152,
+      "track_ids": [
+        2
+      ],
+      "appearances": 150,
       "infractions": [
         "NO-Goggles"
       ],
       "infraction_counts": {
-        "NO-Goggles": 152
+        "NO-Goggles": 150
       },
-      "description": "Worker operating without the following mandatory safety items: NO-Goggles.",
-      "description_source": "template"
+      "description": "Yes, it does appear that she has no safety glasses on her face as well.",
+      "description_source": "HuggingFaceTB/SmolVLM-500M-Instruct"
     }
   ],
   "note": "Model outputs; human review required before any decision."

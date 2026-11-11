@@ -22,46 +22,73 @@
       "min_coverage": 0.3,
       "lost_seconds": 2.0,
       "min_frames": 5
+    },
+    "reid": {
+      "enabled": true,
+      "embedder": "histogram",
+      "threshold": 0.85,
+      "margin": 0.03,
+      "min_samples": 3,
+      "max_pending_seconds": 0.5,
+      "max_absence_seconds": 0.0,
+      "gallery_size": 30,
+      "sample_seconds": 0.2,
+      "min_box_height": 64,
+      "max_overlap": 0.3
     }
+  },
+  "reid_summary": {
+    "tracks_assigned": 4,
+    "tracks_reidentified": 1,
+    "persons": 3
   },
   "persons_with_infractions": 3,
   "total_consolidated_infractions": 3,
   "persons": [
     {
       "person_id": 1,
-      "appearances": 56,
+      "track_ids": [
+        1
+      ],
+      "appearances": 54,
       "infractions": [
         "NO-Safety Vest"
       ],
       "infraction_counts": {
-        "NO-Safety Vest": 56
+        "NO-Safety Vest": 54
       },
-      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
-      "description_source": "template"
+      "description": "No safety vest present.",
+      "description_source": "HuggingFaceTB/SmolVLM-500M-Instruct"
     },
     {
       "person_id": 3,
-      "appearances": 268,
+      "track_ids": [
+        3
+      ],
+      "appearances": 259,
       "infractions": [
         "NO-Safety Vest"
       ],
       "infraction_counts": {
-        "NO-Safety Vest": 268
+        "NO-Safety Vest": 259
       },
-      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
-      "description_source": "template"
+      "description": "Yes, it did.",
+      "description_source": "HuggingFaceTB/SmolVLM-500M-Instruct"
     },
     {
-      "person_id": 5,
-      "appearances": 143,
+      "person_id": 2,
+      "track_ids": [
+        5
+      ],
+      "appearances": 135,
       "infractions": [
         "NO-Safety Vest"
       ],
       "infraction_counts": {
-        "NO-Safety Vest": 143
+        "NO-Safety Vest": 135
       },
-      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest.",
-      "description_source": "template"
+      "description": "No safety vest found.",
+      "description_source": "HuggingFaceTB/SmolVLM-500M-Instruct"
     }
   ],
   "note": "Model outputs; human review required before any decision."

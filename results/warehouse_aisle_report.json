@@ -22,54 +22,81 @@
       "min_coverage": 0.3,
       "lost_seconds": 2.0,
       "min_frames": 5
+    },
+    "reid": {
+      "enabled": true,
+      "embedder": "histogram",
+      "threshold": 0.85,
+      "margin": 0.03,
+      "min_samples": 3,
+      "max_pending_seconds": 0.5,
+      "max_absence_seconds": 0.0,
+      "gallery_size": 30,
+      "sample_seconds": 0.2,
+      "min_box_height": 64,
+      "max_overlap": 0.3
     }
+  },
+  "reid_summary": {
+    "tracks_assigned": 4,
+    "tracks_reidentified": 0,
+    "persons": 4
   },
   "persons_with_infractions": 3,
   "total_consolidated_infractions": 7,
   "persons": [
     {
       "person_id": 1,
-      "appearances": 100,
+      "track_ids": [
+        1
+      ],
+      "appearances": 98,
       "infractions": [
         "NO-Safety Vest",
         "NO-Goggles"
       ],
       "infraction_counts": {
-        "NO-Safety Vest": 100,
+        "NO-Safety Vest": 98,
         "NO-Goggles": 62
       },
-      "description": "Worker operating without the following mandatory safety items: NO-Safety Vest, NO-Goggles.",
-      "description_source": "template"
+      "description": "No safety vest nor goggles are present on this person's head for protection against falling objects from above while working with machinery at work site..",
+      "description_source": "HuggingFaceTB/SmolVLM-500M-Instruct"
     },
     {
       "person_id": 2,
-      "appearances": 96,
+      "track_ids": [
+        2
+      ],
+      "appearances": 94,
       "infractions": [
         "NO-Goggles",
         "NO-Hardhat",
         "NO-Safety Vest"
       ],
       "infraction_counts": {
-        "NO-Goggles": 96,
+        "NO-Goggles": 94,
         "NO-Hardhat": 71,
         "NO-Safety Vest": 51
       },
-      "description": "Worker operating without the following mandatory safety items: NO-Goggles, NO-Hardhat, NO-Safety Vest.",
-      "description_source": "template"
+      "description": "No safety glasses no hard hat nor any vest.",
+      "description_source": "HuggingFaceTB/SmolVLM-500M-Instruct"
     },
     {
       "person_id": 3,
-      "appearances": 112,
+      "track_ids": [
+        3
+      ],
+      "appearances": 110,
       "infractions": [
         "NO-Hardhat",
         "NO-Safety Vest"
       ],
       "infraction_counts": {
-        "NO-Hardhat": 26,
-        "NO-Safety Vest": 112
+        "NO-Hardhat": 24,
+        "NO-Safety Vest": 110
       },
-      "description": "Worker operating without the following mandatory safety items: NO-Hardhat, NO-Safety Vest.",
-      "description_source": "template"
+      "description": "No hard hat nor safety vest present.",
+      "description_source": "HuggingFaceTB/SmolVLM-500M-Instruct"
     }
   ],
   "note": "Model outputs; human review required before any decision."
