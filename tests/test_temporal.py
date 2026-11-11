@@ -1,8 +1,8 @@
 """Tests for the temporal confirmation rule (standard library only)."""
 
-from ppe_compliance.association import best_matches, observe_items
-from ppe_compliance.models import get_model_spec
-from ppe_compliance.temporal import (
+from ppe_compliance.detection.association import best_matches, observe_items
+from ppe_compliance.detection.models import get_model_spec
+from ppe_compliance.tracking.temporal import (
     ItemState,
     ItemTracker,
     Observation,

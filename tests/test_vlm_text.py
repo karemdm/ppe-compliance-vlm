@@ -1,6 +1,6 @@
-"""Tests for the pure text helpers of :mod:`ppe_compliance.vlm` (standard library only)."""
+"""Tests for the pure text helpers of :mod:`ppe_compliance.reporting.vlm` (standard library only)."""
 
-from ppe_compliance.vlm import PROMPT_TEMPLATE, PROMPT_TEXT, clean_answer, fallback_description
+from ppe_compliance.reporting.vlm import PROMPT_TEMPLATE, PROMPT_TEXT, clean_answer, fallback_description
 
 
 def test_clean_answer_strips_assistant_prefix() -> None:

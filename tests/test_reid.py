@@ -2,8 +2,8 @@
 
 import pytest
 
-from ppe_compliance.aggregation import FrameInfraction, PersonInfractionAggregator
-from ppe_compliance.reid import (
+from ppe_compliance.reporting.aggregation import FrameInfraction, PersonInfractionAggregator
+from ppe_compliance.tracking.reid import (
     ReIDConfig,
     ReIdentifier,
     cosine,

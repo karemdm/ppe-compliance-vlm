@@ -1,6 +1,6 @@
 """Tests for the PPE model registry (standard library only)."""
 
-from ppe_compliance.models import (
+from ppe_compliance.detection.models import (
     DEFAULT_PPE_MODEL,
     PPE_ITEMS,
     PPE_MODELS,

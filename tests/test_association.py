@@ -1,6 +1,6 @@
 """Tests for the box overlap association (standard library only)."""
 
-from ppe_compliance.association import boxes_overlap, match_infractions, overlap_ratio
+from ppe_compliance.detection.association import boxes_overlap, match_infractions, overlap_ratio
 
 PERSON = [100, 100, 200, 400]
 

@@ -1,6 +1,6 @@
 """Tests for per-person aggregation and report thresholds (standard library only)."""
 
-from ppe_compliance.aggregation import (
+from ppe_compliance.reporting.aggregation import (
     FrameInfraction,
     PersonInfractionAggregator,
     total_infractions,
