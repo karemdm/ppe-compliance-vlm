@@ -2,6 +2,9 @@
 
 Outputs of `python -m ppe_compliance analyze --no-vlm` with the default settings (`safetyvision`
 model, person `conf=0.45`, PPE `conf=0.15`, 3 s temporal confirmation), on CPU.
+These runs were made **before person re-identification was added**: persons are tracker ids
+and the JSON files have no `track_ids` / `reid_summary`. Re-running the commands below with
+the current code gives re-identified results.
 Annotated videos are re-encoded to 720p and **played at 1.5× speed**; processing ran at the original speed.
 Person boxes: gray while checking, green when compliant, red with the confirmed violations.
 
@@ -33,5 +36,7 @@ python -m ppe_compliance analyze --input samples/construction_site.mp4 \
     --output results/construction_site_report.json --save-video outputs/construction_site.mp4 --no-vlm
 ```
 
-Counts are per tracked ID, so tracker ID switches can count the same worker more than once.
+In these runs counts are per tracked ID, so tracker ID switches can count the same worker more
+than once; with re-identification (current default) they are merged per person when the
+appearance matches.
 These are model outputs on a handful of clips, not a validated evaluation; review them before drawing conclusions.
