@@ -48,7 +48,7 @@ Full video: [`results/demo_vlm_doublecheck.mp4`](results/demo_vlm_doublecheck.mp
   thresholds.
 - VLM report text per person (lazy-loaded; optional with `--no-vlm`).
 - Results cached in the Streamlit session: the video is processed once per
-  video, PPE model and tracker; changing the selected infractions only
+  video, PPE model, tracker and re-ID setting; changing the selected infractions only
   re-filters the cached reports (VLM texts are cached too).
 - Headless `analyze` subcommand that writes a JSON report (and, with
   `--save-video`, the annotated video).
@@ -271,7 +271,8 @@ VLM greedy decoding, `max_new_tokens=60`, `repetition_penalty=1.5`.
 in *Temporal confirmation*), progress bar, rolling log (last 20 lines), the
 metrics *Persons with infractions* and *Total consolidated infractions*
 (sum of kept labels over persons), and one report card per person with the
-latest crop, the kept infraction labels and the VLM text.
+latest crop, the kept infraction labels, the VLM text and, when re-ID merged
+several tracker ids into the person, the list of those ids to check.
 
 **JSON (`analyze`):** no images are stored.
 
