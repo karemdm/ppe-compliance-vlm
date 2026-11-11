@@ -7,7 +7,7 @@ plays, and a consolidation + description phase after the last frame.
 flowchart TD
     A["Video frame"] --> B["Person YOLO (yolov8n)<br/>+ ByteTrack"]
     A --> C["PPE YOLO<br/>(safetyvision or chd)"]
-    B --> D["Person boxes + track IDs"]
+    B --> D["Person boxes + track IDs<br/>→ re-ID: persistent person IDs"]
     C --> E["PPE / infraction boxes"]
     D --> F["Association:<br/>intersection / min area ≥ 0.05"]
     E --> F
@@ -26,6 +26,50 @@ tracker="bytetrack.yaml", persist=True)`. `persist=True` keeps the tracker
 state between frames so ids are stable. The tracker is reset when a new video
 (or new settings) is processed, so ids start again for each video. Frames in
 which ByteTrack returns no ids contribute no persons.
+
+### Re-identification
+
+Implemented in `src/ppe_compliance/reid.py` (standard library only) and
+`src/ppe_compliance/appearance.py` (embedders), applied in
+`pipeline.process_video`. A tracker id is not a person: ByteTrack gives a new
+id when a person leaves and re-enters, after a long occlusion or after an id
+switch. The re-identifier maps every tracker id to a persistent **person id**
+(1, 2, ... in order of creation). The temporal rule (section 4), the drawn
+label `#id` and the aggregation (section 5) use the person id.
+
+**Embeddings.** For a person box `P` of height `h`, an embedding is computed
+only if `h ≥ 64` px and no other person box covers more than 30% of `P`
+(`area(P ∩ Q) / area(P) ≤ 0.3`), so partial and occluded crops do not enter
+the gallery. Embedders (`--reid-embedder`):
+
+- `histogram` (default): the crop is resized to 64×128, converted to HSV and
+  split into 6 horizontal stripes; per stripe a 16×4 hue-saturation histogram
+  and an 8-bin value histogram are L1-normalized and square-rooted, then
+  concatenated and L2-normalized (cosine = averaged Bhattacharyya coefficient).
+- any other value: Ultralytics weights (e.g. `yolo11n-cls.pt`), whose pooled
+  features (`YOLO.embed`, imgsz 224) are L2-normalized. Batched per frame; runs
+  on the GPU when available.
+
+**Matching.** A new tracker id is *pending* until it has `min_samples = 3`
+embeddings or `0.5 s` have passed (drawn thin gray, `track N re-id...`, not
+fed to the temporal rule). Let `q` be the normalized mean of its embeddings
+and `g(p)` the normalized mean of the gallery of person `p`. Candidates are
+the persons whose last frame is **before** the first frame of the new track
+(a person visible at the same time is someone else) and, if
+`--reid-max-absence` > 0, unseen for at most that long. With
+`s(p) = cos(q, g(p))`, best `s₁` and second best `s₂`:
+
+```
+reuse argmax s(p)   if s₁ ≥ threshold (0.85) and s₁ − s₂ ≥ margin (0.03)
+new person id       otherwise (also when the track has no embedding)
+```
+
+Each person keeps its 30 most recent embeddings, at most one every 0.2 s;
+embeddings are computed only for pending tracks and for persons whose gallery
+is due for a sample. If two boxes map to the same person in one frame, only the
+first is fed to the temporal rule and the aggregator.
+
+`--no-reid` restores the previous behavior (person id = tracker id).
 
 ## 2. PPE detection
 
@@ -146,8 +190,10 @@ item is OK and none is VIOLATION, UNKNOWN otherwise. The box is drawn gray
 labels (e.g. `#3 NO-Hardhat`). Raw PPE boxes are still drawn, with thin
 lines (green positive, red negative).
 
-A track unseen for more than `lost_seconds` is forgotten (pruned every
-frame); if the same id comes back later it starts again as UNKNOWN.
+A person unseen for more than `lost_seconds` is forgotten (pruned every
+frame); if the same person id comes back later (same tracker id, or a new one
+re-identified as that person) it starts again as UNKNOWN. A person who is
+re-identified within `lost_seconds` keeps its state.
 
 Example at the defaults (`W = 3 s`, 30 fps, ~91 frames per window): a
 person consistently detected with `NO-Hardhat` turns red 3 s after first
@@ -169,13 +215,14 @@ frames changes nothing.
 
 The aggregator receives, per frame, the **confirmed** violations of each
 person (the items in state VIOLATION after section 4), not the raw
-detections. For each track id it keeps:
+detections. For each person id it keeps:
 
 - `appearances` — number of frames in which the person had **at least one**
   confirmed violation (other frames are not counted);
 - `ppe_counts[label]` — number of frames with that label;
 - `latest_crop` — person crop from the most recent such frame (and, per
-  label, the crop of the most recent frame with that label).
+  label, the crop of the most recent frame with that label);
+- `track_ids` — tracker ids merged into the person (listed in the report).
 
 After the video, a person is reported when
 
@@ -238,6 +285,9 @@ agree with the detector; it is a description, not an independent check.
 | `--lost-seconds` | 2.0 | history kept across longer occlusions |
 | `min_appearances` | 3 | fewer, more persistent reports (confirmed frames) |
 | `min_ratio` | 0.10 | fewer labels per report |
+| `--reid-threshold` | 0.85 | fewer merges: fewer wrong merges, more persons split into several ids |
+| `--reid-margin` | 0.03 | ambiguous matches more often get a new id |
+| `--reid-max-absence` | 0 (whole video) | when > 0, persons absent longer are not matched |
 
 Only the tracker, the person weights and confidence, the PPE model and its confidence, the
 temporal rule, the report thresholds and the VLM model are exposed on the
@@ -246,7 +296,13 @@ command line; the other values live in the dataclasses of
 
 ## Tuning tips
 
-- **Ids switch often / one worker gets several ids:** try
+- **One worker gets several person ids:** lower `--reid-threshold`
+  (e.g. 0.75–0.8) or try `--reid-embedder yolo11n-cls.pt`; check the log
+  lines `Track N is new person #M (best similarity ...)`.
+- **Different workers merged into one person (same `track_ids` list for
+  two people):** raise `--reid-threshold` (e.g. 0.9) or `--reid-margin`, or
+  set `--reid-max-absence`. Uniform PPE makes workers look alike.
+- **Ids switch often:** try
   `--tracker configs/bytetrack_custom.yaml` (longer `track_buffer`). Its very
   low thresholds only take effect if the person `conf` is lowered too, because
   detections below `conf` never reach the tracker.
