@@ -290,9 +290,10 @@ agree with the detector; it is a description, not an independent check.
 | `--reid-max-absence` | 0 (whole video) | when > 0, persons absent longer are not matched |
 
 Only the tracker, the person weights and confidence, the PPE model and its confidence, the
-temporal rule, the report thresholds and the VLM model are exposed on the
-command line; the other values live in the dataclasses of
-`src/ppe_compliance/config.py` and `src/ppe_compliance/tracking/temporal.py`.
+temporal rule, the re-ID switch, embedder, threshold, margin and maximum absence, the
+report thresholds and the VLM model are exposed on the command line; the other values
+live in the dataclasses of `src/ppe_compliance/config.py`,
+`src/ppe_compliance/tracking/temporal.py` and `src/ppe_compliance/tracking/reid.py`.
 
 ## Tuning tips
 
