@@ -54,6 +54,13 @@ def torch_threads() -> int:
     return int(torch.get_num_threads())
 
 
+def torch_device() -> str:
+    """Return "GPU" when torch sees a CUDA device, else "CPU" (shown on the title card)."""
+    import torch
+
+    return "GPU" if torch.cuda.is_available() else "CPU"
+
+
 def ascii_text(text: str) -> str:
     """Replace characters the Hershey fonts cannot draw.
 
@@ -306,8 +313,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             writer.write(img)
 
     hold(card(size, args.title, [
-        ("PPE: SafetyVision v2 (YOLOv8s)   |   Persons: YOLOv8n + ByteTrack", 0.9, LIGHT),
-        (f"Double-check: {vlm_name} (CPU)", 0.9, LIGHT),
+        ("PPE: SafetyVision v2 (YOLOv8s)   |   Persons: YOLOv8n + ByteTrack + re-ID", 0.9, LIGHT),
+        (f"Double-check: {vlm_name} ({torch_device()})", 0.9, LIGHT),
         ("Temporal rule: 3 s window, 60% majority. VLM waits shortened in the video.", 0.7, DIM),
     ]), 2.5)
 
@@ -378,6 +385,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     log_path.write_text(json.dumps({
         "input": str(args.input), "output": str(args.output), "vlm_model": args.vlm_model,
         "vlm_load_seconds": round(load_seconds, 2), "torch_threads": torch_threads(),
+        "device": torch_device(),
         "ppe_model": DetectorConfig().ppe_model, "temporal": asdict(TemporalConfig()),
         "checks": checks,
         "note": "Detections and VLM answers are model outputs; human review required.",
