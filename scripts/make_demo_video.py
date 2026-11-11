@@ -320,7 +320,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         if step.index % 100 == 0:
             logger.info("Frame %d/%d, %d check(s)", step.index, step.total, len(checks))
         for det, status in zip(detector.last_detections, step.persons):
-            if status.state is not ItemState.VIOLATION or det.track_id in seen:
+            # status.track_id is the persistent person id (re-ID), so a person is checked once
+            if not status.identified or status.state is not ItemState.VIOLATION or status.track_id in seen:
                 continue
             if len(checks) >= args.max_vlm_checks or t - last_check_t < args.min_gap_seconds:
                 continue
@@ -329,11 +330,11 @@ def main(argv: Optional[List[str]] = None) -> int:
             crop = crop_box(detector.last_frame, det.box)
             if crop.size == 0:
                 continue
-            seen.add(det.track_id)
+            seen.add(status.track_id)
             last_check_t = t
-            info = {"number": len(checks) + 1, "total": args.max_vlm_checks, "track_id": det.track_id,
+            info = {"number": len(checks) + 1, "total": args.max_vlm_checks, "track_id": status.track_id,
                     "violations": list(status.confirmed_violations), "model": vlm_name}
-            logger.info("VLM check %d: person #%d %s", info["number"], det.track_id, info["violations"])
+            logger.info("VLM check %d: person #%d %s", info["number"], status.track_id, info["violations"])
             began = time.perf_counter()
             answer = reporter.describe(crop, status.confirmed_violations)
             elapsed = time.perf_counter() - began
@@ -353,7 +354,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             hold(freeze_frame(step.annotated, det.box, crop, info, [
                 (f"VLM answer ({elapsed:.1f} s):", 0.75, LIGHT), (f'"{answer}"', 0.85, WHITE)]),
                 args.answer_seconds)
-            checks.append({"check": info["number"], "track_id": det.track_id, "frame_index": step.index,
+            checks.append({"check": info["number"], "person_id": status.track_id, "track_id": det.track_id, "frame_index": step.index,
                            "input_time_s": round(t, 2), "violations": info["violations"],
                            "crop_size": [int(crop.shape[1]), int(crop.shape[0])],
                            "elapsed_seconds": round(elapsed, 2), "answer": answer})
