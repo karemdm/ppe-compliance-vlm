@@ -1,0 +1,23 @@
+# BoT-SORT with the tracker's own appearance re-identification (Ultralytics format).
+# Requires Ultralytics >= 8.3.114 (first release with BoT-SORT ReID support).
+# The tracker ReID only re-links tracks lost for up to `track_buffer` frames and
+# close to their last position (`proximity_thresh`). Persons who leave and come
+# back later are linked by the gallery re-ID of this project
+# (src/ppe_compliance/tracking/reid.py); both can be used together.
+# Select it with `--tracker configs/botsort_reid.yaml` or in the app sidebar.
+# Values are Ultralytics' botsort.yaml defaults, except `with_reid: True`.
+# Note: detections below the `conf` passed to `track()` (0.45 by default)
+# never reach the tracker.
+
+tracker_type: botsort
+track_high_thresh: 0.25  # first-stage association threshold
+track_low_thresh: 0.1    # second-stage (low-score) association threshold
+new_track_thresh: 0.25   # minimum score to start a new track
+track_buffer: 30         # frames a lost track is kept
+match_thresh: 0.8        # association threshold
+fuse_score: True         # fuse detection confidence with IoU distance
+gmc_method: sparseOptFlow  # camera motion compensation; `none` saves compute on fixed cameras
+proximity_thresh: 0.5    # minimum IoU for a ReID match
+appearance_thresh: 0.8   # minimum appearance similarity for a ReID match
+with_reid: True          # enable appearance re-identification in the tracker
+model: auto              # "auto": detector features, else Ultralytics' default cls model
