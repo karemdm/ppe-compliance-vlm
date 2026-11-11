@@ -161,17 +161,22 @@ class PersonStatus:
     """Confirmed compliance of one person after a frame.
 
     Attributes:
-        track_id: Tracker id.
+        track_id: Id the state is kept under: the persistent person id when
+            re-identification is on (see :mod:`ppe_compliance.reid`), else the
+            tracker id. For a track still being re-identified
+            (``identified=False``) it is the tracker id.
         state: Overall state: VIOLATION if any item is in violation, OK if at
             least one item is OK and none is in violation, else UNKNOWN.
         items: Confirmed state per item key.
         confirmed_violations: Labels of the items in violation (item order).
+        identified: False while re-identification of a new track is pending.
     """
 
     track_id: int
     state: ItemState
     items: Dict[str, ItemState] = field(default_factory=dict)
     confirmed_violations: List[str] = field(default_factory=list)
+    identified: bool = True
 
 
 @dataclass
@@ -224,7 +229,7 @@ class PersonComplianceTracker:
 
         Args:
             t: Frame time in seconds.
-            track_id: Tracker id of the person.
+            track_id: Id of the person (person id or tracker id).
             observations: Observation per item key.
 
         Returns:

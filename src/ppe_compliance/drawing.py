@@ -48,7 +48,8 @@ def draw_person_status(frame: np.ndarray, box: Sequence[int], status: PersonStat
     """Draw a person box colored by its confirmed state, in place.
 
     Gray with ``#id checking`` while unknown, green with ``#id OK``, red with
-    the confirmed violation labels.
+    the confirmed violation labels. ``#id`` is the person id (the tracker id
+    when re-identification is off).
 
     Args:
         frame: BGR image to draw on.
@@ -62,6 +63,17 @@ def draw_person_status(frame: np.ndarray, box: Sequence[int], status: PersonStat
     else:
         text = f"#{status.track_id} checking"
     draw_labeled_box(frame, box, text, STATE_COLORS[status.state], font_scale=0.5, thickness=2)
+
+
+def draw_pending_person(frame: np.ndarray, box: Sequence[int], track_id: int) -> None:
+    """Draw a new track whose re-identification is pending (gray, thin), in place.
+
+    Args:
+        frame: BGR image to draw on.
+        box: ``(x1, y1, x2, y2)`` person box.
+        track_id: Tracker id.
+    """
+    draw_labeled_box(frame, box, f"track {track_id} re-id...", GRAY, font_scale=0.5, thickness=1)
 
 
 def crop_box(frame: np.ndarray, box: Sequence[int]) -> np.ndarray:

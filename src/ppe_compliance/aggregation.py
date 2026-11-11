@@ -2,6 +2,8 @@
 
 The pipeline feeds it with *confirmed* violations (after the temporal rule of
 :mod:`ppe_compliance.temporal`), so the counts are frames in a confirmed state.
+Persons are keyed by the persistent person id of :mod:`ppe_compliance.reid`
+(the tracker id when re-identification is off).
 """
 
 from collections import Counter
@@ -11,23 +13,25 @@ from typing import Any, Dict, FrozenSet, Iterable, List, Optional, Tuple
 
 @dataclass
 class FrameInfraction:
-    """A tracked person associated with infractions in one frame.
+    """A person associated with infractions in one frame.
 
     Attributes:
-        person_id: Tracker id of the person.
+        person_id: Persistent person id (tracker id when re-ID is off).
         missing_ppes: Confirmed infraction labels of the person.
         crop: Person crop (BGR image array); typed as ``Any`` to stay
             independent of numpy.
+        track_id: Tracker id of the box, or ``None`` if unknown.
     """
 
     person_id: int
     missing_ppes: List[str]
     crop: Any = None
+    track_id: Optional[int] = None
 
 
 @dataclass
 class PersonRecord:
-    """Accumulated statistics for one tracked person.
+    """Accumulated statistics for one person.
 
     Attributes:
         appearances: Number of frames with at least one associated infraction.
@@ -38,6 +42,7 @@ class PersonRecord:
             report to a subset of labels without reprocessing the video.
         label_crops: Per label, ``(appearance number, crop)`` of the most
             recent frame with that label (used for the crop of a filtered report).
+        track_ids: Tracker ids of the frames with an infraction, in first-seen order.
     """
 
     appearances: int = 0
@@ -45,6 +50,7 @@ class PersonRecord:
     latest_crop: Any = None
     label_sets: Counter = field(default_factory=Counter)
     label_crops: Dict[str, Tuple[int, Any]] = field(default_factory=dict)
+    track_ids: List[int] = field(default_factory=list)
 
 
 @dataclass
@@ -52,11 +58,12 @@ class PersonReport:
     """Consolidated result for one person that passed the thresholds.
 
     Attributes:
-        person_id: Tracker id.
+        person_id: Persistent person id.
         appearances: Frames with at least one infraction.
         infractions: Infraction labels that passed ``min_ratio``.
         ppe_counts: Frame counts of the kept infraction labels.
         crop: Latest person crop.
+        track_ids: Tracker ids merged into this person by re-identification.
     """
 
     person_id: int
@@ -64,10 +71,11 @@ class PersonReport:
     infractions: List[str]
     ppe_counts: Dict[str, int]
     crop: Any = None
+    track_ids: List[int] = field(default_factory=list)
 
 
 class PersonInfractionAggregator:
-    """Accumulates infractions per tracked person over a video."""
+    """Accumulates infractions per person over a video."""
 
     def __init__(self) -> None:
         """Create an empty aggregator."""
@@ -75,7 +83,7 @@ class PersonInfractionAggregator:
 
     @property
     def records(self) -> Dict[int, PersonRecord]:
-        """Per-person records keyed by tracker id (first-seen order)."""
+        """Per-person records keyed by person id (first-seen order)."""
         return self._records
 
     def update(self, item: FrameInfraction) -> None:
@@ -90,6 +98,8 @@ class PersonInfractionAggregator:
         record = self._records.setdefault(item.person_id, PersonRecord())
         record.appearances += 1
         record.latest_crop = item.crop
+        if item.track_id is not None and item.track_id not in record.track_ids:
+            record.track_ids.append(item.track_id)
         labels = list(dict.fromkeys(item.missing_ppes))
         for label in labels:
             record.ppe_counts[label] = record.ppe_counts.get(label, 0) + 1
@@ -152,6 +162,7 @@ class PersonInfractionAggregator:
                     infractions=list(kept),
                     ppe_counts=kept,
                     crop=crop,
+                    track_ids=list(record.track_ids),
                 )
             )
         return reports

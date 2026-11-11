@@ -14,6 +14,7 @@ from typing import List, Optional, Tuple
 
 from .config import CUSTOM_TRACKER, DetectorConfig, ReportConfig, VLMConfig
 from .models import PPE_MODELS
+from .reid import ReIDConfig
 from .temporal import TemporalConfig
 
 
@@ -23,7 +24,7 @@ def add_pipeline_args(parser: argparse.ArgumentParser) -> None:
     Args:
         parser: Parser to extend.
     """
-    d, r, v, t = DetectorConfig(), ReportConfig(), VLMConfig(), TemporalConfig()
+    d, r, v, t, rid = DetectorConfig(), ReportConfig(), VLMConfig(), TemporalConfig(), ReIDConfig()
     parser.add_argument("--person-weights", default=d.person_weights,
                         help="Person detection weights (falls back to auto-download by file name).")
     parser.add_argument("--person-conf", type=float, default=d.person_conf,
@@ -51,6 +52,18 @@ def add_pipeline_args(parser: argparse.ArgumentParser) -> None:
                         help="Minimum frames with a confirmed infraction for a person to be reported.")
     parser.add_argument("--min-ratio", type=float, default=r.min_ratio,
                         help="Minimum confirmed count/appearances ratio for an infraction to be reported.")
+    parser.add_argument("--no-reid", action="store_true",
+                        help="Disable re-identification: one person per tracker id.")
+    parser.add_argument("--reid-embedder", default=rid.embedder,
+                        help="Re-ID appearance embedder: 'histogram' (color histograms, no extra model) "
+                             "or Ultralytics classification weights, e.g. yolo11n-cls.pt (GPU recommended).")
+    parser.add_argument("--reid-threshold", type=float, default=rid.threshold,
+                        help="Minimum cosine similarity to reuse the id of a person seen before.")
+    parser.add_argument("--reid-margin", type=float, default=rid.margin,
+                        help="Minimum gap between the best and second-best similarity (ambiguity guard).")
+    parser.add_argument("--reid-max-absence", type=float, default=rid.max_absence_seconds,
+                        help="Persons unseen for longer than this many seconds are not re-identified "
+                             "(0 = whole video).")
     parser.add_argument("--vlm-model", default=v.model_id, help="Hugging Face id of the VLM.")
     parser.add_argument("--no-vlm", action="store_true",
                         help="Skip the VLM and use a template sentence in the reports.")
@@ -60,6 +73,8 @@ def build_configs(
     args: argparse.Namespace,
 ) -> Tuple[DetectorConfig, ReportConfig, VLMConfig, TemporalConfig]:
     """Create the configuration objects from parsed arguments.
+
+    The re-ID configuration is built by :func:`build_reid_config`.
 
     Args:
         args: Namespace produced by a parser extended with :func:`add_pipeline_args`.
@@ -86,6 +101,27 @@ def build_configs(
         min_frames=args.min_frames,
     )
     return detector, report, VLMConfig(model_id=args.vlm_model), temporal
+
+
+def build_reid_config(args: argparse.Namespace) -> ReIDConfig:
+    """Create the re-identification configuration from parsed arguments.
+
+    Args:
+        args: Namespace produced by a parser extended with :func:`add_pipeline_args`.
+
+    Returns:
+        The re-ID configuration.
+
+    Raises:
+        ValueError: If a parameter is out of range.
+    """
+    return ReIDConfig(
+        enabled=not args.no_reid,
+        embedder=args.reid_embedder,
+        threshold=args.reid_threshold,
+        margin=args.reid_margin,
+        max_absence_seconds=args.reid_max_absence,
+    )
 
 
 def build_app_parser() -> argparse.ArgumentParser:

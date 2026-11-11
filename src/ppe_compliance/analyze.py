@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from .aggregation import PersonInfractionAggregator, total_infractions
-from .cli import add_pipeline_args, build_configs
+from .cli import add_pipeline_args, build_configs, build_reid_config
 from .detector import PPEDetector
 from .models import PPE_MODELS, get_model_spec, parse_infractions
 from .pipeline import process_video, video_fps
@@ -93,6 +93,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         parser.error(str(exc))
     try:
         detector_cfg, report_cfg, vlm_cfg, temporal_cfg = build_configs(args)
+        reid_cfg = build_reid_config(args)
     except ValueError as exc:
         parser.error(str(exc))
     if not Path(args.input).is_file():
@@ -101,10 +102,14 @@ def main(argv: Optional[List[str]] = None) -> int:
     detector = PPEDetector(detector_cfg)
     aggregator = PersonInfractionAggregator()
     frames = 0
+    tracks_seen: set = set()
+    reidentified = 0
     writer = None
     try:
-        for step in process_video(detector, args.input, targets, temporal_cfg):
+        for step in process_video(detector, args.input, targets, temporal_cfg, reid_cfg):
             aggregator.update_many(step.infractions)
+            reidentified += sum(d.reused for d in step.reid_decisions)
+            tracks_seen.update(d.track_id for d in step.reid_decisions)
             frames = step.index
             if args.save_video:
                 if writer is None:
@@ -129,6 +134,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             description = reporter.describe(report.crop, report.infractions)
         persons.append({
             "person_id": report.person_id,
+            "track_ids": report.track_ids,
             "appearances": report.appearances,
             "infractions": report.infractions,
             "infraction_counts": report.ppe_counts,
@@ -147,7 +153,13 @@ def main(argv: Optional[List[str]] = None) -> int:
             "min_ratio": report_cfg.min_ratio,
             "ppe_conf": detector_cfg.ppe_conf,
             "temporal": asdict(temporal_cfg),
+            "reid": asdict(reid_cfg),
         },
+        "reid_summary": {
+            "tracks_assigned": len(tracks_seen),
+            "tracks_reidentified": reidentified,
+            "persons": len(tracks_seen) - reidentified,
+        } if reid_cfg.enabled else None,
         "persons_with_infractions": len(reports),
         "total_consolidated_infractions": total_infractions(reports),
         "persons": persons,

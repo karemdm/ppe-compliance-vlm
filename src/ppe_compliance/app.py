@@ -15,7 +15,8 @@ if __package__ in (None, ""):  # executed by `streamlit run` as a plain script
 import streamlit as st
 
 from ppe_compliance.aggregation import PersonInfractionAggregator, total_infractions
-from ppe_compliance.cli import build_app_parser, build_configs
+from ppe_compliance.appearance import build_embedder
+from ppe_compliance.cli import build_app_parser, build_configs, build_reid_config
 from ppe_compliance.config import available_trackers
 from ppe_compliance.detector import PPEDetector
 from ppe_compliance.drawing import bgr_to_pil, bgr_to_rgb
@@ -28,12 +29,19 @@ UI_REFRESH_S = 0.1
 
 args = build_app_parser().parse_args(sys.argv[1:])
 detector_cfg, report_cfg, vlm_cfg, temporal_cfg = build_configs(args)
+reid_cfg = build_reid_config(args)
 
 
 @st.cache_resource
 def load_detector(ppe_model: str) -> PPEDetector:
     """Load the detection models once per Streamlit server and PPE model."""
     return PPEDetector(replace(detector_cfg, ppe_model=ppe_model))
+
+
+@st.cache_resource
+def load_embedder(name: str):
+    """Create the re-ID appearance embedder once per Streamlit server."""
+    return build_embedder(name)
 
 
 @st.cache_resource
@@ -68,11 +76,18 @@ trackers = available_trackers()
 if args.tracker not in trackers:
     trackers.insert(0, args.tracker)
 tracker = st.sidebar.selectbox("Tracker configuration:", trackers, index=trackers.index(args.tracker))
+use_reid = st.sidebar.checkbox(
+    "Re-identify persons who leave and re-enter",
+    value=reid_cfg.enabled,
+    help=f"Appearance embedder: {reid_cfg.embedder}, similarity threshold {reid_cfg.threshold:g}.",
+)
+run_reid_cfg = replace(reid_cfg, enabled=use_reid)
+embedder = load_embedder(run_reid_cfg.embedder) if use_reid else None
 st.sidebar.caption(
     f"A person turns red or green only after a {temporal_cfg.window_seconds:g} s majority "
     "of frames agrees (gray while checking)."
 )
-st.sidebar.caption("Detections and VLM text are model outputs and require human review.")
+st.sidebar.caption("Detections, re-identification and VLM text are model outputs and require human review.")
 
 col_stream, col_reports = st.columns([3, 2])
 with col_stream:
@@ -98,11 +113,11 @@ if uploaded is None:
     state.aggregator, state.cache_key, state.vlm_results = None, None, {}
     st.stop()
 
-# The video is processed once per (file, model, tracker) with ALL infractions the
+# The video is processed once per (file, model, tracker, re-ID) with ALL infractions the
 # model supports. Changing the infraction filter only re-selects the reports from
 # the cached aggregator, so Streamlit reruns never process the same video twice.
-key = (uploaded.name, uploaded.size, ppe_model, tracker)
-if state.cache_key != key:  # new video, model or tracker: invalidate cached results
+key = (uploaded.name, uploaded.size, ppe_model, tracker, use_reid)
+if state.cache_key != key:  # new video, model, tracker or re-ID: invalidate cached results
     state.aggregator, state.cache_key, state.vlm_results = None, key, {}
 
 if state.aggregator is None:
@@ -114,7 +129,7 @@ if state.aggregator is None:
     last_ui = 0.0
     status_text.info("Processing video...")
     try:  # a Streamlit rerun interrupts this loop: always remove the temporary file
-        for step in process_video(detector, tmp.name, None, temporal_cfg):
+        for step in process_video(detector, tmp.name, None, temporal_cfg, run_reid_cfg, embedder):
             aggregator.update_many(step.infractions)
             recent_logs = (recent_logs + step.logs)[-MAX_LOG_LINES:]
             now = time.time()
@@ -168,5 +183,8 @@ with reports_area:
         c1, c2 = exp.columns([1, 2])
         c1.image(bgr_to_pil(report.crop), caption=f"ID #{report.person_id}", width=130)
         c2.markdown("**Missing PPE / events:**\n" + "\n".join(f"- **{p}**" for p in report.infractions))
+        if use_reid and len(report.track_ids) > 1:
+            c2.caption("Re-identified across tracker ids " + ", ".join(map(str, report.track_ids))
+                       + " (check that they are the same person).")
         vlm_text = state.vlm_results.get((report.person_id, tuple(report.infractions)), "Analysis pending...")
         c2.info(f"**VLM report:** {vlm_text}")
