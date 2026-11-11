@@ -29,8 +29,8 @@ which ByteTrack returns no ids contribute no persons.
 
 ### Re-identification
 
-Implemented in `src/ppe_compliance/reid.py` (standard library only) and
-`src/ppe_compliance/appearance.py` (embedders), applied in
+Implemented in `src/ppe_compliance/tracking/reid.py` (standard library only) and
+`src/ppe_compliance/tracking/appearance.py` (embedders), applied in
 `pipeline.process_video`. A tracker id is not a person: ByteTrack gives a new
 id when a person leaves and re-enters, after a long occlusion or after an id
 switch. The re-identifier maps every tracker id to a persistent **person id**
@@ -76,7 +76,7 @@ first is fed to the temporal rule and the aggregator.
 ### Model selection
 
 Two PPE models are bundled in `weights/` and registered in
-`src/ppe_compliance/models.py` as `PPEModelSpec` entries (key, display name,
+`src/ppe_compliance/detection/models.py` as `PPEModelSpec` entries (key, display name,
 weights path, source, license, `imgsz` and class mapping). The model is
 chosen with `--ppe-model {safetyvision,chd}` (default `safetyvision`) or in
 the Streamlit sidebar; the app keeps one loaded detector per model.
@@ -139,7 +139,7 @@ one observation per frame (section 4).
 
 ## 4. Temporal confirmation (hysteresis)
 
-Implemented in `src/ppe_compliance/temporal.py` (standard library only) and
+Implemented in `src/ppe_compliance/tracking/temporal.py` (standard library only) and
 applied in `pipeline.process_video`.
 
 ### Observations
@@ -292,7 +292,7 @@ agree with the detector; it is a description, not an independent check.
 Only the tracker, the person weights and confidence, the PPE model and its confidence, the
 temporal rule, the report thresholds and the VLM model are exposed on the
 command line; the other values live in the dataclasses of
-`src/ppe_compliance/config.py` and `src/ppe_compliance/temporal.py`.
+`src/ppe_compliance/config.py` and `src/ppe_compliance/tracking/temporal.py`.
 
 ## Tuning tips
 
@@ -303,7 +303,10 @@ command line; the other values live in the dataclasses of
   two people):** raise `--reid-threshold` (e.g. 0.9) or `--reid-margin`, or
   set `--reid-max-absence`. Uniform PPE makes workers look alike.
 - **Ids switch often:** try
-  `--tracker configs/bytetrack_custom.yaml` (longer `track_buffer`). Its very
+  `--tracker configs/bytetrack_custom.yaml` (longer `track_buffer`) or
+  `--tracker configs/botsort_reid.yaml` (BoT-SORT with appearance re-ID for
+  tracks lost up to `track_buffer` frames; needs Ultralytics >= 8.3.114 and
+  costs extra compute). Its very
   low thresholds only take effect if the person `conf` is lowered too, because
   detections below `conf` never reach the tracker.
 - **Infractions assigned to the wrong person in crowded scenes:** raise the
