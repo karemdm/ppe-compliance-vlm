@@ -1,6 +1,6 @@
 """Configuration defaults and path helpers.
 
-PPE class mappings live in :mod:`ppe_compliance.models`.
+PPE class mappings live in :mod:`ppe_compliance.detection.models`.
 
 Standard library only, so it can be imported by tests and lightweight code.
 """
@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple
 
-from .models import DEFAULT_PPE_MODEL
+from .detection.models import DEFAULT_PPE_MODEL
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +19,9 @@ BUILTIN_TRACKERS: Tuple[str, ...] = ("bytetrack.yaml", "botsort.yaml")
 
 #: Custom tracker configuration bundled with the repository.
 CUSTOM_TRACKER = "configs/bytetrack_custom.yaml"
+
+#: BoT-SORT with the tracker's own appearance re-ID (needs Ultralytics >= 8.3.114).
+REID_TRACKER = "configs/botsort_reid.yaml"
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -35,7 +38,7 @@ class DetectorConfig:
         tracker: Ultralytics tracker name or path to a tracker YAML.
         ppe_model: Key of the bundled PPE model (see ``models.PPE_MODELS``).
         ppe_conf: Confidence threshold for PPE detections. Kept low because
-            the temporal rule (:mod:`ppe_compliance.temporal`) filters noise.
+            the temporal rule (:mod:`ppe_compliance.tracking.temporal`) filters noise.
         ppe_iou: NMS IoU threshold for PPE detections.
         overlap_threshold: Minimum intersection / min(area) to associate a
             PPE or infraction box with a person box.
@@ -131,12 +134,13 @@ def available_trackers() -> List[str]:
     """List the tracker options offered in the UI.
 
     Returns:
-        ``bytetrack.yaml`` plus the bundled custom config when it is found.
+        ``bytetrack.yaml`` plus the bundled configs that are found.
     """
     options = ["bytetrack.yaml"]
-    try:
-        resolve_tracker(CUSTOM_TRACKER)
-        options.append(CUSTOM_TRACKER)
-    except FileNotFoundError:
-        pass
+    for bundled in (CUSTOM_TRACKER, REID_TRACKER):
+        try:
+            resolve_tracker(bundled)
+            options.append(bundled)
+        except FileNotFoundError:
+            pass
     return options

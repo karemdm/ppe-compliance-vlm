@@ -6,12 +6,12 @@ from typing import Any, Dict, Iterable, Iterator, List, Optional
 import cv2
 import numpy as np
 
-from .aggregation import FrameInfraction
-from .appearance import build_embedder
-from .detector import PPEDetector
-from .drawing import crop_box, draw_pending_person, draw_person_status
-from .reid import ReIDConfig, ReIDDecision, ReIdentifier, usable_for_embedding
-from .temporal import ItemState, PersonComplianceTracker, PersonStatus, TemporalConfig
+from .reporting.aggregation import FrameInfraction
+from .tracking.appearance import build_embedder
+from .detection.detector import PPEDetector
+from .ui.drawing import crop_box, draw_pending_person, draw_person_status
+from .tracking.reid import ReIDConfig, ReIDDecision, ReIdentifier, usable_for_embedding
+from .tracking.temporal import ItemState, PersonComplianceTracker, PersonStatus, TemporalConfig
 
 #: Frame rate assumed when the container does not report one.
 DEFAULT_FPS = 30.0
