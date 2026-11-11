@@ -52,8 +52,9 @@ Full video: [`results/demo_vlm_doublecheck.mp4`](results/demo_vlm_doublecheck.mp
   re-filters the cached reports (VLM texts are cached too).
 - Headless `analyze` subcommand that writes a JSON report (and, with
   `--save-video`, the annotated video).
-- Selectable tracker config: Ultralytics `bytetrack.yaml` (default) or
-  `configs/bytetrack_custom.yaml`.
+- Selectable tracker config: Ultralytics `bytetrack.yaml` (default),
+  `configs/bytetrack_custom.yaml` or `configs/botsort_reid.yaml` (BoT-SORT
+  with the tracker's own appearance re-ID; needs Ultralytics >= 8.3.114).
 
 ## How it works
 
@@ -118,6 +119,13 @@ If a person comes back within `--lost-seconds`, the confirmed state continues;
 after a longer absence it starts gray again, but the frames are counted in the
 same report. Each report lists the merged tracker ids (`track_ids`) so the
 merge can be checked. Disable it with `--no-reid` (or the sidebar checkbox).
+
+Ultralytics also has re-ID inside some trackers (BoT-SORT with `with_reid`),
+selectable here with `--tracker configs/botsort_reid.yaml`. It only re-links a
+track lost for up to `track_buffer` frames (30 by default, about 1 s) and
+near its last position, so it reduces id switches during short occlusions. The
+gallery re-ID above is what links a person who leaves and comes back later;
+the two can be used together.
 
 ## Installation
 
@@ -201,7 +209,7 @@ ppe-compliance --no-vlm             # template sentences instead of the VLM
 ppe-compliance --ppe-model chd      # preselect the chd model in the sidebar
 ppe-compliance --tracker configs/bytetrack_custom.yaml --min-appearances 5
 python -m ppe_compliance            # same as ppe-compliance
-streamlit run src/ppe_compliance/app.py -- --no-vlm   # direct Streamlit call
+streamlit run src/ppe_compliance/ui/app.py -- --no-vlm   # direct Streamlit call
 ```
 
 In the sidebar, select the PPE model, the infractions to monitor (only those
@@ -232,7 +240,7 @@ Run `ppe-compliance --help` and `ppe-compliance analyze --help` for all options.
 | `--person-weights` | `weights/yolov8n.pt` | Person model; falls back to the Ultralytics auto-download by file name |
 | `--person-conf` | `0.45` | Confidence threshold for person detections; raise it if non-persons are detected |
 | `--ppe-conf` | `0.15` | Confidence threshold for PPE / infraction detections (low on purpose; the temporal rule filters noise) |
-| `--tracker` | `bytetrack.yaml` | Tracker name or YAML (e.g. `configs/bytetrack_custom.yaml`); also in the sidebar |
+| `--tracker` | `bytetrack.yaml` | Tracker name or YAML (e.g. `configs/bytetrack_custom.yaml`, `configs/botsort_reid.yaml`); also in the sidebar |
 | `--ppe-model` | `safetyvision` | Bundled PPE model: `safetyvision` or `chd` (also in the sidebar) |
 | `--confirm-seconds` | `3.0` | Sliding window (s); also the time a track must exist before its state can change |
 | `--min-majority` | `0.6` | Share of informative frames (worn + not worn) the winning side needs, in (0.5, 1] |
@@ -305,24 +313,29 @@ confirmed by the temporal rule. `person_id` is the persistent person id and
 ```
 ppe-compliance-vlm/
   configs/bytetrack_custom.yaml   # optional tracker config
+  configs/botsort_reid.yaml       # optional BoT-SORT with tracker re-ID
   docs/how-it-works.md            # pipeline details and formulas
   docs/model-and-data-research.md # dated research log (models, datasets, clips)
   src/ppe_compliance/
     __init__.py  __main__.py
-    cli.py          # entry point: launches Streamlit or runs `analyze`
-    app.py          # Streamlit UI
-    analyze.py      # headless JSON report
-    pipeline.py     # video loop shared by app and analyze
-    detector.py     # PPEDetector: models, tracking, per-person observations
-    reid.py         # re-identification: tracker ids -> person ids (stdlib)
-    appearance.py   # appearance embeddings for re-ID (histogram / Ultralytics)
-    association.py  # box overlap and per-item observations (stdlib)
-    temporal.py     # temporal confirmation / hysteresis (stdlib)
-    aggregation.py  # PersonInfractionAggregator (stdlib)
-    drawing.py      # OpenCV drawing / image conversion
-    vlm.py          # VLMReporter (lazy Idefics2 loading)
-    models.py       # PPE model registry and paired class mapping (stdlib)
-    config.py       # dataclass defaults and path helpers (stdlib)
+    config.py         # dataclass defaults and path helpers (stdlib)
+    pipeline.py       # video loop shared by app and analyze
+    detection/        # what is in each frame
+      detector.py     # PPEDetector: models, tracking, per-person observations
+      models.py       # PPE model registry and paired class mapping (stdlib)
+      association.py  # box overlap and per-item observations (stdlib)
+    tracking/         # who is who over time
+      temporal.py     # temporal confirmation / hysteresis (stdlib)
+      reid.py         # re-identification: tracker ids -> person ids (stdlib)
+      appearance.py   # appearance embeddings for re-ID (histogram / Ultralytics)
+    reporting/        # what is reported at the end
+      aggregation.py  # PersonInfractionAggregator (stdlib)
+      vlm.py          # VLMReporter (lazy Idefics2 loading)
+    ui/               # entry points and drawing
+      cli.py          # entry point: launches Streamlit or runs `analyze`
+      app.py          # Streamlit UI
+      analyze.py      # headless JSON report
+      drawing.py      # OpenCV drawing / image conversion
   scripts/make_demo_video.py  # renders the demo video with VLM double-check freezes
   samples/          # input clips + README (sources, licenses)
   results/          # example outputs (annotated videos, JSON reports) + README
@@ -375,7 +388,7 @@ Run the tests with `pytest` (they only need the standard library).
 
 Both PPE models are stored in `weights/` and selected with `--ppe-model` or
 in the sidebar. Class names are matched in lower case; the pairing used by
-this project is defined in `src/ppe_compliance/models.py`.
+this project is defined in `src/ppe_compliance/detection/models.py`.
 
 | | `safetyvision` (default) | `chd` |
 |---|---|---|

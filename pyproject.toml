@@ -22,7 +22,7 @@ dependencies = [
 ]
 
 [project.scripts]
-ppe-compliance = "ppe_compliance.cli:main"
+ppe-compliance = "ppe_compliance.ui.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
