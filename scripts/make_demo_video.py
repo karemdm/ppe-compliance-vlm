@@ -32,11 +32,11 @@ import cv2
 import numpy as np
 
 from ppe_compliance.config import DetectorConfig, VLMConfig
-from ppe_compliance.detector import PPEDetector
-from ppe_compliance.drawing import crop_box
+from ppe_compliance.detection.detector import PPEDetector
+from ppe_compliance.ui.drawing import crop_box
 from ppe_compliance.pipeline import process_video, video_fps
-from ppe_compliance.temporal import ItemState, TemporalConfig
-from ppe_compliance.vlm import VLMReporter
+from ppe_compliance.tracking.temporal import ItemState, TemporalConfig
+from ppe_compliance.reporting.vlm import VLMReporter
 
 logger = logging.getLogger("make_demo_video")
 
