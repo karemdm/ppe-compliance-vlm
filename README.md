@@ -1,6 +1,6 @@
 # ppe-compliance-vlm
 
-Video PPE compliance monitoring: YOLO person tracking, PPE infraction detection, per-person consolidation and short vision-language model (VLM) reports in a Streamlit app.
+Video PPE compliance monitoring: YOLO person tracking with re-identification, PPE infraction detection, per-person consolidation and short vision-language model (VLM) reports in a Streamlit app.
 
 Upload a video, choose which infractions to monitor, and watch an annotated
 feed while each tracked person is matched with worn / missing PPE detections.
@@ -27,6 +27,11 @@ Full video: [`results/demo_vlm_doublecheck.mp4`](results/demo_vlm_doublecheck.mp
 ## Features
 
 - Person detection with YOLOv8n and ByteTrack tracking (stable ids per video).
+- Person re-identification: a person who leaves and re-enters (or gets a new
+  tracker id after an occlusion or id switch) keeps the same person id, so
+  they appear in one report. Appearance embeddings are HSV color histograms
+  (default, no extra model) or features of an Ultralytics classification
+  model (`--reid-embedder yolo11n-cls.pt`, GPU recommended).
 - Two bundled PPE YOLO models, selectable in the sidebar or with
   `--ppe-model`: `safetyvision` (default, YOLOv8s) and `chd` (YOLO26-L).
 - Paired PPE classes per model (worn / missing); the infraction list offered
@@ -56,7 +61,7 @@ Full video: [`results/demo_vlm_doublecheck.mp4`](results/demo_vlm_doublecheck.mp
 flowchart TD
     A["Video frame"] --> B["Person YOLO (yolov8n)<br/>+ ByteTrack"]
     A --> C["PPE YOLO<br/>(safetyvision or chd)"]
-    B --> D["Person boxes + track IDs"]
+    B --> D["Person boxes + track IDs<br/>→ re-ID: persistent person IDs"]
     C --> E["PPE / infraction boxes"]
     D --> F["Association:<br/>intersection / min area ≥ 0.05"]
     E --> F
@@ -90,6 +95,29 @@ Event classes such as `Fall-Detected` only have a *not worn* side.
 - A track unseen for 2 s is forgotten.
 
 Reports and the JSON count only frames with a confirmed violation.
+
+### Re-identification
+
+The tracker gives a new id when a person leaves the image and comes back, or
+after a long occlusion or an id switch. Re-identification maps tracker ids to
+persistent **person ids**, used for the box label (`#id`), the temporal rule
+and the reports.
+
+- A new track is first drawn thin gray (`track N re-id...`) while it collects
+  3 appearance embeddings (at most 0.5 s). Boxes lower than 64 px or more than
+  30% covered by another person give no embedding.
+- Its mean embedding is compared (cosine similarity) with the gallery of every
+  person seen before. A person visible at the same time as the new track is
+  never a candidate.
+- The best person is reused if the similarity is at least
+  `--reid-threshold` (0.85) and at least `--reid-margin` (0.03) above the
+  second best; otherwise a new person id is created.
+- Each person keeps its 30 most recent embeddings (one every 0.2 s).
+
+If a person comes back within `--lost-seconds`, the confirmed state continues;
+after a longer absence it starts gray again, but the frames are counted in the
+same report. Each report lists the merged tracker ids (`track_ids`) so the
+merge can be checked. Disable it with `--no-reid` (or the sidebar checkbox).
 
 ## Installation
 
@@ -137,7 +165,7 @@ Observations from this run (qualitative, not a validated evaluation):
 - Warehouse aisle: all three workers are confirmed as violations (no hardhat / no vest).
 - Compliant worker (hardhat + vest, back view): stays green.
 - Lumber warehouse: the workers are small and far; their boxes stay gray (not enough evidence) instead of guessing.
-- Tracker ID switches still inflate the per-person count.
+- Tracker ID switches inflated the per-person count in this run (it was made before re-identification was added).
 
 ### Demo video
 
@@ -213,6 +241,11 @@ Run `ppe-compliance --help` and `ppe-compliance analyze --help` for all options.
 | `--min-frames` | `5` | Minimum informative frames in the window before a state can change |
 | `--min-appearances` | `3` | Minimum frames with a confirmed infraction for a person to be reported |
 | `--min-ratio` | `0.10` | Minimum `count / appearances` (confirmed frames) for an infraction label |
+| `--no-reid` | off | Disable re-identification (one person per tracker id); also a sidebar checkbox |
+| `--reid-embedder` | `histogram` | Appearance embedder: `histogram` (HSV color histograms of 6 body stripes) or Ultralytics classification weights, e.g. `yolo11n-cls.pt` (auto-downloaded, uses the GPU if available) |
+| `--reid-threshold` | `0.85` | Minimum cosine similarity to reuse the id of a person seen before |
+| `--reid-margin` | `0.03` | Minimum gap between the best and second-best similarity; ambiguous matches get a new id |
+| `--reid-max-absence` | `0` | Persons unseen for longer than this (s) are not re-identified; `0` = whole video |
 | `--vlm-model` | `HuggingFaceM4/idefics2-8b` | VLM used for the report text |
 | `--no-vlm` | off | Use the template sentence instead of the VLM |
 | `--infractions` (analyze) | all supported by the model | Infractions to monitor (sidebar in the app) |
@@ -241,12 +274,15 @@ latest crop, the kept infraction labels and the VLM text.
   "monitored_infractions": ["no-hardhat", "..."],
   "settings": {"ppe_model": "safetyvision", "tracker": "bytetrack.yaml", "min_appearances": 3, "min_ratio": 0.1,
                "ppe_conf": 0.15,
-               "temporal": {"window_seconds": 3.0, "min_majority": 0.6, "min_coverage": 0.3, "lost_seconds": 2.0}},
+               "temporal": {"window_seconds": 3.0, "min_majority": 0.6, "min_coverage": 0.3, "lost_seconds": 2.0},
+               "reid": {"enabled": true, "embedder": "histogram", "threshold": 0.85, "...": "..."}},
+  "reid_summary": {"tracks_assigned": 9, "tracks_reidentified": 3, "persons": 6},
   "persons_with_infractions": 1,
   "total_consolidated_infractions": 2,
   "persons": [
     {
       "person_id": 4,
+      "track_ids": [4, 11],
       "appearances": 37,
       "infractions": ["NO-Hardhat", "NO-Safety Vest"],
       "infraction_counts": {"NO-Hardhat": 35, "NO-Safety Vest": 12},
@@ -260,7 +296,9 @@ latest crop, the kept infraction labels and the VLM text.
 
 (Values above illustrate the format only.) `appearances` and
 `infraction_counts` are numbers of frames in which the violation was
-confirmed by the temporal rule.
+confirmed by the temporal rule. `person_id` is the persistent person id and
+`track_ids` the tracker ids merged into it by re-identification
+(`reid_summary` is `null` with `--no-reid`).
 
 ## Project structure
 
@@ -276,6 +314,8 @@ ppe-compliance-vlm/
     analyze.py      # headless JSON report
     pipeline.py     # video loop shared by app and analyze
     detector.py     # PPEDetector: models, tracking, per-person observations
+    reid.py         # re-identification: tracker ids -> person ids (stdlib)
+    appearance.py   # appearance embeddings for re-ID (histogram / Ultralytics)
     association.py  # box overlap and per-item observations (stdlib)
     temporal.py     # temporal confirmation / hysteresis (stdlib)
     aggregation.py  # PersonInfractionAggregator (stdlib)
@@ -320,10 +360,13 @@ Run the tests with `pytest` (they only need the standard library).
   also reported as weak.
 - `appearances` counts only frames with a confirmed infraction, so the
   ratio is relative to those frames, not to the time a person is visible.
-- Track ids are not re-identification: a person who leaves and re-enters may
-  get a new id and appear in several reports.
-- Processing is sequential and frame by frame; long videos take time,
-  especially without a GPU.
+- Re-identification compares appearance only and is not calibrated on PPE
+  footage: workers in similar clothing (e.g. the same hi-vis vest and
+  hardhat) can be merged into one person, and a person whose appearance
+  changes (puts on a vest, turns around, different lighting) can get a new
+  id. The color histogram is sensitive to lighting; the Ultralytics
+  classification features are generic, not trained for person re-ID. Check
+  the `track_ids` of each report and tune `--reid-threshold`.
 - No accuracy evaluation has been done for this project.
 
 ## Models & credits
