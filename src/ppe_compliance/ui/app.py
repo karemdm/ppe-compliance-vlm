@@ -181,7 +181,7 @@ with reports_area:
             f"Report - person #{report.person_id} ({len(report.infractions)} infraction(s))", expanded=True
         )
         c1, c2 = exp.columns([1, 2])
-        c1.image(bgr_to_pil(report.crop), caption=f"ID #{report.person_id}", width=130)
+        c1.image(bgr_to_pil(report.crop), caption=f"ID #{report.person_id}", width="stretch")
         c2.markdown("**Missing PPE / events:**\n" + "\n".join(f"- **{p}**" for p in report.infractions))
         if use_reid and len(report.track_ids) > 1:
             c2.caption("Re-identified across tracker ids " + ", ".join(map(str, report.track_ids))
