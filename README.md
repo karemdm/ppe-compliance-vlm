@@ -34,7 +34,7 @@ Full video: [`results/demo_vlm_doublecheck.mp4`](results/demo_vlm_doublecheck.mp
 
 ## Features
 
-- Person detection with YOLOv8n and ByteTrack tracking (stable ids per video).
+- Person detection with YOLOv8n and tracking (ByteTrack by default; stable ids per video).
 - Person re-identification: a person who leaves and re-enters (or gets a new
   tracker id after an occlusion or id switch) keeps the same person id, so
   they appear in one report. Appearance embeddings are HSV color histograms
@@ -221,6 +221,8 @@ PYTHONPATH=src python scripts/make_demo_video.py --input outputs/demo_input.mp4 
     --vlm-model HuggingFaceTB/SmolVLM-500M-Instruct --ffmpeg ffmpeg
 ```
 
+All options of the script are listed by `python scripts/make_demo_video.py --help`.
+
 ## Usage
 
 ### Streamlit app
@@ -366,7 +368,9 @@ ppe-compliance-vlm/
   weights/          # yolov8n.pt, safetyvision_v2_yolov8s.pt, chd_yolo26l.pt + README
 ```
 
-Run the tests with `pytest` (they only need the standard library).
+Run the tests with `pytest`. They need only the package's light dependencies;
+heavy ones such as `torch` and `transformers` are imported lazily and are not
+required by the unit tests.
 
 ## Limitations
 
@@ -423,7 +427,7 @@ this project is defined in `src/ppe_compliance/detection/models.py`.
 | Ignored classes | Person | Person, Safety Cone, machinery, utility pole, vehicle |
 | Reported metric* | test mAP50 0.766, mAP50-95 0.487 (imgsz 896, 4,026 test images) | validation mAP50-95 0.6482 (imgsz 640, 6,664 validation images) |
 | License | AGPL-3.0 | AGPL-3.0 |
-| Source | [ayushgupta7777/safetyvision-yolov8](https://huggingface.co/ayushgupta7777/safetyvision-yolov8) (`v2/best.pt`) | [yihong1120/Construction-Hazard-Detection](https://huggingface.co/yihong1120/Construction-Hazard-Detection) (`models/yolo26/pt/yolo26l.pt`), code on [GitHub](https://github.com/yihong1120/Construction-Hazard-Detection) |
+| Source | [ayushgupta7777/safetyvision-yolov8](https://huggingface.co/ayushgupta7777/safetyvision-yolov8) (shipped as `weights/safetyvision_v2_yolov8s.pt`) | [yihong1120/Construction-Hazard-Detection](https://huggingface.co/yihong1120/Construction-Hazard-Detection) (shipped as `weights/chd_yolo26l.pt`), code on [GitHub](https://github.com/yihong1120/Construction-Hazard-Detection) |
 
 \* As reported by each author on their own split. The numbers come from
 different datasets and splits, are not comparable with each other and have

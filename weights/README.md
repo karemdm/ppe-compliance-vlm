@@ -5,8 +5,8 @@ All three YOLO weights used by the project are stored in this folder.
 | File | Used for | Source | License | Size | SHA-256 |
 |------|----------|--------|---------|------|---------|
 | `yolov8n.pt` | Person detection + ByteTrack tracking (COCO class 0) | [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics) | AGPL-3.0 | 6.5 MB (6,549,796 bytes) | `f59b3d833e2ff32e194b5bb8e08d211dc7c5bdf144b90d2c8412c47ccfc83b36` |
-| `safetyvision_v2_yolov8s.pt` | PPE model `safetyvision` (default), YOLOv8s, 13 classes | [ayushgupta7777/safetyvision-yolov8](https://huggingface.co/ayushgupta7777/safetyvision-yolov8), file `v2/best.pt` | AGPL-3.0 | 22 MB (22,547,434 bytes) | `7863be4700dcf831579d610bb3fe3668fb29fb22ab17ca027b55e94b88bfff7a` |
-| `chd_yolo26l.pt` | PPE model `chd`, YOLO26-L, 11 classes | [yihong1120/Construction-Hazard-Detection](https://huggingface.co/yihong1120/Construction-Hazard-Detection), file `models/yolo26/pt/yolo26l.pt` (code: [GitHub](https://github.com/yihong1120/Construction-Hazard-Detection)) | AGPL-3.0 | 51 MB (52,974,949 bytes) | `398c424c1edbc0d288f88ecb9b38ac30d941707142f74db8b622b1b82f8d10d3` |
+| `safetyvision_v2_yolov8s.pt` | PPE model `safetyvision` (default), YOLOv8s, 13 classes | [ayushgupta7777/safetyvision-yolov8](https://huggingface.co/ayushgupta7777/safetyvision-yolov8) (shipped here as this file) | AGPL-3.0 | 22 MB (22,547,434 bytes) | `7863be4700dcf831579d610bb3fe3668fb29fb22ab17ca027b55e94b88bfff7a` |
+| `chd_yolo26l.pt` | PPE model `chd`, YOLO26-L, 11 classes | [yihong1120/Construction-Hazard-Detection](https://huggingface.co/yihong1120/Construction-Hazard-Detection), (shipped here as this file; code: [GitHub](https://github.com/yihong1120/Construction-Hazard-Detection)) | AGPL-3.0 | 51 MB (52,974,949 bytes) | `398c424c1edbc0d288f88ecb9b38ac30d941707142f74db8b622b1b82f8d10d3` |
 
 Check a file with `sha256sum weights/<file>.pt` (Linux/macOS) or
 `Get-FileHash weights\<file>.pt -Algorithm SHA256` (PowerShell).

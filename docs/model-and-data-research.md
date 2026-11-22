@@ -1,5 +1,7 @@
 # PPE detection: model, dataset and test-video research
 
+> File paths in this log refer to the training setup at the time of the research; the weights shipped with the project are in `weights/` (see `weights/README.md`).
+
 > Research notes prepared with AI assistance (Claude) on 2026-11-09. Every number below is copied from the cited source and has **not** been reproduced or validated by this project. Treat it as a shortlist to evaluate, not as verified results.
 
 ## 1. Summary / recommendation

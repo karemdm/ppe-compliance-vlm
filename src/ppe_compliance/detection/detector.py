@@ -21,7 +21,7 @@ class PersonDetection:
     """A tracked person in one frame with its per-item observations.
 
     Attributes:
-        track_id: Tracker id.
+        track_id: Tracker id (not the persistent person id, see re-ID).
         box: ``(x1, y1, x2, y2)`` person box.
         observations: Observation per monitored item key (e.g. ``"no-hardhat"``).
         raw_infractions: Infraction labels observed in this frame (before
@@ -37,8 +37,8 @@ class PersonDetection:
 class PPEDetector:
     """Tracks persons and associates PPE / infraction detections with them.
 
-    Two models are used: a COCO YOLO model tracked with ByteTrack for persons
-    and one of the bundled PPE YOLO models (see :mod:`ppe_compliance.detection.models`).
+    Two models are used: a COCO YOLO model tracked with the configured
+    Ultralytics tracker (ByteTrack by default) for persons and one of the bundled PPE YOLO models (see :mod:`ppe_compliance.detection.models`).
     """
 
     def __init__(self, config: Optional[DetectorConfig] = None) -> None:
@@ -162,6 +162,6 @@ class PPEDetector:
             observations = observe_items(matches, items)
             raw = [i.label for i in items if observations[i.key] is Observation.NOT_WORN]
             if raw:
-                logs.append(f"Person #{person_id} raw infractions {raw}")
+                logs.append(f"Track {person_id} raw infractions {raw}")
             detections.append(PersonDetection(person_id, box, observations, raw))
         return annotated, detections, logs
