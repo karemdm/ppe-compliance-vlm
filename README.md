@@ -366,7 +366,9 @@ ppe-compliance-vlm/
   weights/          # yolov8n.pt, safetyvision_v2_yolov8s.pt, chd_yolo26l.pt + README
 ```
 
-Run the tests with `pytest` (they only need the standard library).
+Run the tests with `pytest`. They need only the package's light dependencies;
+heavy ones such as `torch` and `transformers` are imported lazily and are not
+required by the unit tests.
 
 ## Limitations
 
