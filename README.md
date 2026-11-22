@@ -34,7 +34,7 @@ Full video: [`results/demo_vlm_doublecheck.mp4`](results/demo_vlm_doublecheck.mp
 
 ## Features
 
-- Person detection with YOLOv8n and ByteTrack tracking (stable ids per video).
+- Person detection with YOLOv8n and tracking (ByteTrack by default; stable ids per video).
 - Person re-identification: a person who leaves and re-enters (or gets a new
   tracker id after an occlusion or id switch) keeps the same person id, so
   they appear in one report. Appearance embeddings are HSV color histograms
