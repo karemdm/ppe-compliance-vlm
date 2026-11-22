@@ -1,8 +1,9 @@
 """Command-line entry point.
 
 ``ppe-compliance [options]`` launches the Streamlit app; options after the
-command are forwarded to the app. ``ppe-compliance analyze ...`` runs the
-headless analysis and writes a JSON report.
+command are forwarded to the app (an optional leading ``app`` is accepted and
+ignored). ``ppe-compliance analyze ...`` runs the headless analysis and writes
+a JSON report.
 """
 
 import argparse
