@@ -192,10 +192,10 @@ Observations from this run (qualitative, not a validated evaluation):
 
 - Construction site: the worker in a sun hat is confirmed `NO-Hardhat`; the worker in a hi-vis shirt stays green; most others are confirmed `NO-Safety Vest`. The person model (`yolov8n`, 640 px) still finds only part of the ~20 workers, so some are never checked.
 - Industrial structure: the worker without a vest is confirmed `NO-Safety Vest`; the other worker is confirmed `NO-Goggles` from weak detections (0.18–0.22) that were stable over the window — the temporal rule removes flicker, not consistent errors. Missing gloves are not flagged.
-- Carpenters: both confirmed `NO-Safety Vest`.
-- Warehouse aisle: all three workers are confirmed as violations (no hardhat / no vest).
+- Carpenters: both confirmed `NO-Safety Vest` (reported as three persons: one worker was split into two ids).
+- Warehouse aisle: all three workers are confirmed as violations (`NO-Safety Vest`, plus `NO-Hardhat` and `NO-Goggles` for two of them).
 - Compliant worker (hardhat + vest, back view): stays green.
-- Lumber warehouse: the workers are small and far; their boxes stay gray (not enough evidence) instead of guessing.
+- Lumber warehouse: the workers are small and far. The operator stays gray (not enough evidence); the spotter turns green once his vest is detected, and his missing hardhat is not flagged.
 - Counts are per person after re-identification (histogram embedder, default settings); tracker ids merged into one person are listed in `track_ids`, and a worker whose appearance changes can still be counted twice.
 
 ### Demo video
@@ -210,8 +210,9 @@ confirmed violations and an "Analyzing..." counter while SmolVLM really runs on 
 counter shows the real elapsed time, but the wait is shortened to 4 s of video. The answer is
 then shown for 3 s and playback resumes. Each check (track id, violations, elapsed seconds,
 answer) is logged in [`results/demo_vlm_doublecheck.json`](results/demo_vlm_doublecheck.json).
-In this run all three checks were `NO-Safety Vest` on the construction site. The answers were short agreements ("Yes.", "No safety vest found.", "No safety vest
-present."). The prompt names the flagged label, so these answers are not independent evidence.
+In this run all three checks were `NO-Safety Vest` on the construction site. The answers were "Yes.",
+"No safety vest present." and one rambling sentence that starts by agreeing (the 500M model is weak).
+The prompt names the flagged label, so these answers are not independent evidence.
 
 ```bash
 # build the 1080p30 input (first 20 s of the construction site + the compliant worker)
