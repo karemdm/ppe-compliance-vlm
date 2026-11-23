@@ -122,10 +122,11 @@ def test_video_fps_fallback() -> None:
 def test_capture_is_released_when_the_consumer_stops_early(tmp_path, monkeypatch) -> None:
     video = make_video(tmp_path / "v.avi", 6)
     released = []
+    real_capture = cv2.VideoCapture
 
     class Spy:
         def __init__(self, path):
-            self._cap = cv2.VideoCapture(path)
+            self._cap = real_capture(path)
 
         def __getattr__(self, name):
             return getattr(self._cap, name)
