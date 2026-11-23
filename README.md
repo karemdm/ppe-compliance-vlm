@@ -332,7 +332,7 @@ several tracker ids into the person, the list of those ids to check.
 `infraction_counts` are numbers of frames in which the violation was
 confirmed by the temporal rule. `person_id` is the persistent person id and
 `track_ids` the tracker ids merged into it by re-identification
-(`reid_summary` is `null` with `--no-reid`).
+(`reid_summary` is `null` with `--no-reid`). `description_source` is the VLM model id, or `template` with `--no-vlm`.
 
 ## Project structure
 
