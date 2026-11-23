@@ -54,6 +54,16 @@ class DetectorConfig:
     ppe_iou: float = 0.20
     overlap_threshold: float = 0.05
 
+    def __post_init__(self) -> None:
+        """Validate the thresholds.
+
+        Raises:
+            ValueError: If a threshold is outside ``[0, 1]``.
+        """
+        for name in ("person_conf", "person_iou", "ppe_conf", "ppe_iou", "overlap_threshold"):
+            if not 0.0 <= getattr(self, name) <= 1.0:
+                raise ValueError(f"{name} must be in [0, 1]")
+
 
 @dataclass
 class ReportConfig:
@@ -71,6 +81,17 @@ class ReportConfig:
 
     min_appearances: int = 3
     min_ratio: float = 0.10
+
+    def __post_init__(self) -> None:
+        """Validate the thresholds.
+
+        Raises:
+            ValueError: If a threshold is out of range.
+        """
+        if self.min_appearances < 1:
+            raise ValueError("min_appearances must be >= 1")
+        if not 0.0 <= self.min_ratio <= 1.0:
+            raise ValueError("min_ratio must be in [0, 1]")
 
 
 @dataclass
@@ -91,8 +112,10 @@ class VLMConfig:
 def resolve_weights(path: str) -> str:
     """Return a usable weights path.
 
-    If ``path`` does not exist, its file name is returned instead so that
-    Ultralytics can auto-download official weights (e.g. ``yolov8n.pt``).
+    The path is looked up in the current directory first and then relative to
+    the repository root (so ``weights/yolov8n.pt`` is found from any working
+    directory). If it exists in neither, its file name is returned instead so
+    that Ultralytics can auto-download official weights (e.g. ``yolov8n.pt``).
 
     Args:
         path: Configured weights path.
@@ -100,8 +123,9 @@ def resolve_weights(path: str) -> str:
     Returns:
         The existing path, or its file name as an Ultralytics model name.
     """
-    if Path(path).is_file():
-        return path
+    for candidate in (Path(path), _REPO_ROOT / path):
+        if candidate.is_file():
+            return str(candidate)
     name = Path(path).name
     logger.warning("Weights '%s' not found, falling back to '%s' (auto-download).", path, name)
     return name
