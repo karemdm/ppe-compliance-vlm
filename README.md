@@ -179,12 +179,12 @@ Idefics2-8b, so its answers are less reliable.
 Example run on [`samples/ppe_demo_input.mp4`](samples/README.md) (six real-time Pexels clips:
 construction site, industrial structure, two carpenters, warehouse aisle, compliant worker, lumber
 warehouse; 2,484 frames, ~83 s) with the default `safetyvision` model, person `conf=0.45`,
-PPE `conf=0.15`, temporal confirmation with the default 3 s window, `--no-vlm`, on CPU:
+PPE `conf=0.15`, temporal confirmation with the default 3 s window, re-identification on (default) and the VLM `HuggingFaceTB/SmolVLM-500M-Instruct`, on CPU:
 
 | File | Content |
 |---|---|
 | [`results/ppe_demo_safetyvision.mp4`](results/ppe_demo_safetyvision.mp4) | Annotated video (720p, **played at 1.5× speed**; processing ran at the original speed). Person boxes: gray while checking, green when compliant, red with the confirmed violations. Thin boxes are the raw PPE detections. |
-| [`results/report_safetyvision.json`](results/report_safetyvision.json) | Consolidated report of confirmed violations: 20 tracked IDs (20 × NO-Safety Vest, 5 × NO-Hardhat, 3 × NO-Goggles). |
+| [`results/report_safetyvision.json`](results/report_safetyvision.json) | Consolidated report of confirmed violations: 16 persons after re-identification (from 42 tracker ids merged into 32 persons), with 16 × NO-Safety Vest, 5 × NO-Hardhat and 3 × NO-Goggles. Each report has a VLM sentence from SmolVLM-500M. This is one run over the whole compilation; the per-clip runs in [`results/README.md`](results/README.md) are separate runs and sum to 18 persons with `NO-Safety Vest` (3 + 11 + 1 + 3), because re-identification and the clip boundaries change the person count. |
 
 The GIF at the top shows the construction-site segment.
 
@@ -192,11 +192,11 @@ Observations from this run (qualitative, not a validated evaluation):
 
 - Construction site: the worker in a sun hat is confirmed `NO-Hardhat`; the worker in a hi-vis shirt stays green; most others are confirmed `NO-Safety Vest`. The person model (`yolov8n`, 640 px) still finds only part of the ~20 workers, so some are never checked.
 - Industrial structure: the worker without a vest is confirmed `NO-Safety Vest`; the other worker is confirmed `NO-Goggles` from weak detections (0.18–0.22) that were stable over the window — the temporal rule removes flicker, not consistent errors. Missing gloves are not flagged.
-- Carpenters: both confirmed `NO-Safety Vest`.
-- Warehouse aisle: all three workers are confirmed as violations (no hardhat / no vest).
+- Carpenters: both confirmed `NO-Safety Vest` (reported as three persons: one worker was split into two ids).
+- Warehouse aisle: all three workers are confirmed as violations (`NO-Safety Vest`, plus `NO-Hardhat` and `NO-Goggles` for two of them).
 - Compliant worker (hardhat + vest, back view): stays green.
-- Lumber warehouse: the workers are small and far; their boxes stay gray (not enough evidence) instead of guessing.
-- Tracker ID switches inflated the per-person count in this run (it was made before re-identification was added).
+- Lumber warehouse: the workers are small and far. The operator stays gray (not enough evidence); the spotter turns green once his vest is detected, and his missing hardhat is not flagged.
+- Counts are per person after re-identification (histogram embedder, default settings); tracker ids merged into one person are listed in `track_ids`, and a worker whose appearance changes can still be counted twice.
 
 ### Demo video
 
@@ -210,8 +210,9 @@ confirmed violations and an "Analyzing..." counter while SmolVLM really runs on 
 counter shows the real elapsed time, but the wait is shortened to 4 s of video. The answer is
 then shown for 3 s and playback resumes. Each check (track id, violations, elapsed seconds,
 answer) is logged in [`results/demo_vlm_doublecheck.json`](results/demo_vlm_doublecheck.json).
-In this run all three checks were `NO-Safety Vest` on the construction site. The answers were short agreements ("Yes.", "No safety vest found.", "No safety vest
-present."). The prompt names the flagged label, so these answers are not independent evidence.
+In this run all three checks were `NO-Safety Vest` on the construction site. The answers were "Yes.",
+"No safety vest present." and one rambling sentence that starts by agreeing (the 500M model is weak).
+The prompt names the flagged label, so these answers are not independent evidence.
 
 ```bash
 # build the 1080p30 input (first 20 s of the construction site + the compliant worker)
@@ -331,7 +332,7 @@ several tracker ids into the person, the list of those ids to check.
 `infraction_counts` are numbers of frames in which the violation was
 confirmed by the temporal rule. `person_id` is the persistent person id and
 `track_ids` the tracker ids merged into it by re-identification
-(`reid_summary` is `null` with `--no-reid`).
+(`reid_summary` is `null` with `--no-reid`). `description_source` is the VLM model id, or `template` with `--no-vlm`.
 
 ## Project structure
 

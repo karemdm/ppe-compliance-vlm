@@ -16,10 +16,10 @@ def test_clean_answer_uses_last_assistant_turn() -> None:
 
 
 def test_prompt_template_wraps_prompt_text() -> None:
-    prompt = PROMPT_TEMPLATE.format(ppes="NO-Hardhat")
+    prompt = PROMPT_TEMPLATE.format(labels="NO-Hardhat")
     assert prompt.startswith("User: <image> ")
     assert prompt.endswith("\nAssistant:")
-    assert PROMPT_TEXT.format(ppes="NO-Hardhat") in prompt
+    assert PROMPT_TEXT.format(labels="NO-Hardhat") in prompt
 
 
 def test_fallback_description_lists_items() -> None:

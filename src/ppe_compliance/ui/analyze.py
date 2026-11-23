@@ -137,7 +137,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             "track_ids": report.track_ids,
             "appearances": report.appearances,
             "infractions": report.infractions,
-            "infraction_counts": report.ppe_counts,
+            "infraction_counts": report.infraction_counts,
             "description": description,
             "description_source": "template" if reporter is None else vlm_cfg.model_id,
         })
