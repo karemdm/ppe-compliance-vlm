@@ -179,12 +179,12 @@ Idefics2-8b, so its answers are less reliable.
 Example run on [`samples/ppe_demo_input.mp4`](samples/README.md) (six real-time Pexels clips:
 construction site, industrial structure, two carpenters, warehouse aisle, compliant worker, lumber
 warehouse; 2,484 frames, ~83 s) with the default `safetyvision` model, person `conf=0.45`,
-PPE `conf=0.15`, temporal confirmation with the default 3 s window, `--no-vlm`, on CPU:
+PPE `conf=0.15`, temporal confirmation with the default 3 s window, re-identification on (default) and the VLM `HuggingFaceTB/SmolVLM-500M-Instruct`, on CPU:
 
 | File | Content |
 |---|---|
 | [`results/ppe_demo_safetyvision.mp4`](results/ppe_demo_safetyvision.mp4) | Annotated video (720p, **played at 1.5× speed**; processing ran at the original speed). Person boxes: gray while checking, green when compliant, red with the confirmed violations. Thin boxes are the raw PPE detections. |
-| [`results/report_safetyvision.json`](results/report_safetyvision.json) | Consolidated report of confirmed violations: 20 tracked IDs (20 × NO-Safety Vest, 5 × NO-Hardhat, 3 × NO-Goggles). |
+| [`results/report_safetyvision.json`](results/report_safetyvision.json) | Consolidated report of confirmed violations: 16 persons after re-identification (from 42 tracker ids merged into 32 persons), with 16 × NO-Safety Vest, 5 × NO-Hardhat and 3 × NO-Goggles. Each report has a VLM sentence from SmolVLM-500M. |
 
 The GIF at the top shows the construction-site segment.
 
@@ -196,7 +196,7 @@ Observations from this run (qualitative, not a validated evaluation):
 - Warehouse aisle: all three workers are confirmed as violations (no hardhat / no vest).
 - Compliant worker (hardhat + vest, back view): stays green.
 - Lumber warehouse: the workers are small and far; their boxes stay gray (not enough evidence) instead of guessing.
-- Tracker ID switches inflated the per-person count in this run (it was made before re-identification was added).
+- Counts are per person after re-identification (histogram embedder, default settings); tracker ids merged into one person are listed in `track_ids`, and a worker whose appearance changes can still be counted twice.
 
 ### Demo video
 
