@@ -308,73 +308,75 @@ def main(argv: Optional[List[str]] = None) -> int:
     if not writer.isOpened():
         raise IOError(f"Cannot open video writer: {args.raw_output}")
 
-    def hold(img: np.ndarray, seconds: float) -> None:
-        for _ in range(max(1, round(seconds * fps))):
-            writer.write(img)
+    try:
+        def hold(img: np.ndarray, seconds: float) -> None:
+            for _ in range(max(1, round(seconds * fps))):
+                writer.write(img)
 
-    hold(card(size, args.title, [
-        ("PPE: SafetyVision v2 (YOLOv8s)   |   Persons: YOLOv8n + ByteTrack + re-ID", 0.9, LIGHT),
-        (f"Double-check: {vlm_name} ({torch_device()})", 0.9, LIGHT),
-        ("Temporal rule: 3 s window, 60% majority. VLM waits shortened in the video.", 0.7, DIM),
-    ]), 2.5)
+        hold(card(size, args.title, [
+            ("PPE: SafetyVision v2 (YOLOv8s)   |   Persons: YOLOv8n + ByteTrack + re-ID", 0.9, LIGHT),
+            (f"Double-check: {vlm_name} ({torch_device()})", 0.9, LIGHT),
+            ("Temporal rule: 3 s window, 60% majority. VLM waits shortened in the video.", 0.7, DIM),
+        ]), 2.5)
 
-    checks: List[Dict[str, Any]] = []
-    seen: set = set()
-    last_check_t = -math.inf
-    for step in process_video(detector, args.input, None, TemporalConfig()):
-        t = (step.index - 1) / fps
-        writer.write(playback_overlay(step.annotated, t))
-        if step.index % 100 == 0:
-            logger.info("Frame %d/%d, %d check(s)", step.index, step.total, len(checks))
-        for det, status in zip(detector.last_detections, step.persons):
-            # status.track_id is the persistent person id (re-ID), so a person is checked once
-            if not status.identified or status.state is not ItemState.VIOLATION or status.track_id in seen:
-                continue
-            if len(checks) >= args.max_vlm_checks or t - last_check_t < args.min_gap_seconds:
-                continue
-            if det.box[3] - det.box[1] < args.min_crop_height:
-                continue
-            crop = crop_box(detector.last_frame, det.box)
-            if crop.size == 0:
-                continue
-            seen.add(status.track_id)
-            last_check_t = t
-            info = {"number": len(checks) + 1, "total": args.max_vlm_checks, "track_id": status.track_id,
-                    "violations": list(status.confirmed_violations), "model": vlm_name}
-            logger.info("VLM check %d: person #%d %s", info["number"], status.track_id, info["violations"])
-            began = time.perf_counter()
-            answer = reporter.describe(crop, status.confirmed_violations)
-            elapsed = time.perf_counter() - began
-            logger.info("VLM answered in %.1f s: %s", elapsed, answer)
+        checks: List[Dict[str, Any]] = []
+        seen: set = set()
+        last_check_t = -math.inf
+        for step in process_video(detector, args.input, None, TemporalConfig()):
+            t = (step.index - 1) / fps
+            writer.write(playback_overlay(step.annotated, t))
+            if step.index % 100 == 0:
+                logger.info("Frame %d/%d, %d check(s)", step.index, step.total, len(checks))
+            for det, status in zip(detector.last_detections, step.persons):
+                # status.track_id is the persistent person id (re-ID), so a person is checked once
+                if not status.identified or status.state is not ItemState.VIOLATION or status.track_id in seen:
+                    continue
+                if len(checks) >= args.max_vlm_checks or t - last_check_t < args.min_gap_seconds:
+                    continue
+                if det.box[3] - det.box[1] < args.min_crop_height:
+                    continue
+                crop = crop_box(detector.last_frame, det.box)
+                if crop.size == 0:
+                    continue
+                seen.add(status.track_id)
+                last_check_t = t
+                info = {"number": len(checks) + 1, "total": args.max_vlm_checks, "track_id": status.track_id,
+                        "violations": list(status.confirmed_violations), "model": vlm_name}
+                logger.info("VLM check %d: person #%d %s", info["number"], status.track_id, info["violations"])
+                began = time.perf_counter()
+                answer = reporter.describe(crop, status.confirmed_violations)
+                elapsed = time.perf_counter() - began
+                logger.info("VLM answered in %.1f s: %s", elapsed, answer)
 
-            shown = min(elapsed, args.max_wait_seconds)
-            n_wait = max(1, round(shown * fps))
-            refresh = max(1, round(fps / args.freeze_fps))
-            note = [("(wait shortened in the video)", 0.6, DIM)] if elapsed > shown + 0.05 else []
-            for i in range(n_wait):
-                k = min(n_wait, (i // refresh + 1) * refresh)
-                value = elapsed * k / n_wait
-                dots = "." * (1 + (i // max(1, round(fps / 3))) % 3)
-                hold_img = freeze_frame(step.annotated, det.box, crop, info,
-                                        [(f"Analyzing{dots:<3}  {value:5.1f} s", 1.0, WHITE)] + note)
-                writer.write(hold_img)
-            hold(freeze_frame(step.annotated, det.box, crop, info, [
-                (f"VLM answer ({elapsed:.1f} s):", 0.75, LIGHT), (f'"{answer}"', 0.85, WHITE)]),
-                args.answer_seconds)
-            checks.append({"check": info["number"], "person_id": status.track_id, "track_id": det.track_id, "frame_index": step.index,
-                           "input_time_s": round(t, 2), "violations": info["violations"],
-                           "crop_size": [int(crop.shape[1]), int(crop.shape[0])],
-                           "elapsed_seconds": round(elapsed, 2), "answer": answer})
+                shown = min(elapsed, args.max_wait_seconds)
+                n_wait = max(1, round(shown * fps))
+                refresh = max(1, round(fps / args.freeze_fps))
+                note = [("(wait shortened in the video)", 0.6, DIM)] if elapsed > shown + 0.05 else []
+                for i in range(n_wait):
+                    k = min(n_wait, (i // refresh + 1) * refresh)
+                    value = elapsed * k / n_wait
+                    dots = "." * (1 + (i // max(1, round(fps / 3))) % 3)
+                    hold_img = freeze_frame(step.annotated, det.box, crop, info,
+                                            [(f"Analyzing{dots:<3}  {value:5.1f} s", 1.0, WHITE)] + note)
+                    writer.write(hold_img)
+                hold(freeze_frame(step.annotated, det.box, crop, info, [
+                    (f"VLM answer ({elapsed:.1f} s):", 0.75, LIGHT), (f'"{answer}"', 0.85, WHITE)]),
+                    args.answer_seconds)
+                checks.append({"check": info["number"], "person_id": status.track_id, "track_id": det.track_id, "frame_index": step.index,
+                               "input_time_s": round(t, 2), "violations": info["violations"],
+                               "crop_size": [int(crop.shape[1]), int(crop.shape[0])],
+                               "elapsed_seconds": round(elapsed, 2), "answer": answer})
 
-    hold(card(size, "Models and credits", [
-        ("PPE detection: SafetyVision v2 (YOLOv8s), AGPL-3.0", 0.85, LIGHT),
-        ("Person detection + tracking: YOLOv8n + ByteTrack (Ultralytics), AGPL-3.0", 0.85, LIGHT),
-        (f"VLM double-check: {vlm_name}", 0.85, LIGHT),
-        ("Footage: Pexels (Pexels License)", 0.85, LIGHT),
-        ("Detections and VLM text are model outputs and require human review.", 0.8, YELLOW),
-        ("Prepared with AI assistance.", 0.7, DIM),
-    ]), 3.0)
-    writer.release()
+        hold(card(size, "Models and credits", [
+            ("PPE detection: SafetyVision v2 (YOLOv8s), AGPL-3.0", 0.85, LIGHT),
+            ("Person detection + tracking: YOLOv8n + ByteTrack (Ultralytics), AGPL-3.0", 0.85, LIGHT),
+            (f"VLM double-check: {vlm_name}", 0.85, LIGHT),
+            ("Footage: Pexels (Pexels License)", 0.85, LIGHT),
+            ("Detections and VLM text are model outputs and require human review.", 0.8, YELLOW),
+            ("Prepared with AI assistance.", 0.7, DIM),
+        ]), 3.0)
+    finally:
+        writer.release()
 
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     subprocess.run([args.ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-i", args.raw_output,
