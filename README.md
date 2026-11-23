@@ -184,7 +184,7 @@ PPE `conf=0.15`, temporal confirmation with the default 3 s window, re-identific
 | File | Content |
 |---|---|
 | [`results/ppe_demo_safetyvision.mp4`](results/ppe_demo_safetyvision.mp4) | Annotated video (720p, **played at 1.5× speed**; processing ran at the original speed). Person boxes: gray while checking, green when compliant, red with the confirmed violations. Thin boxes are the raw PPE detections. |
-| [`results/report_safetyvision.json`](results/report_safetyvision.json) | Consolidated report of confirmed violations: 16 persons after re-identification (from 42 tracker ids merged into 32 persons), with 16 × NO-Safety Vest, 5 × NO-Hardhat and 3 × NO-Goggles. Each report has a VLM sentence from SmolVLM-500M. |
+| [`results/report_safetyvision.json`](results/report_safetyvision.json) | Consolidated report of confirmed violations: 16 persons after re-identification (from 42 tracker ids merged into 32 persons), with 16 × NO-Safety Vest, 5 × NO-Hardhat and 3 × NO-Goggles. Each report has a VLM sentence from SmolVLM-500M. This is one run over the whole compilation; the per-clip runs in [`results/README.md`](results/README.md) are separate runs and sum to 18 persons with `NO-Safety Vest` (3 + 11 + 1 + 3), because re-identification and the clip boundaries change the person count. |
 
 The GIF at the top shows the construction-site segment.
 

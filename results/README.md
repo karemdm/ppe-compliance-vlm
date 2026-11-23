@@ -27,7 +27,7 @@ waits are shortened, real times are shown and logged). Built with `scripts/make_
 ## Combined run
 
 [`ppe_demo_safetyvision.mp4`](ppe_demo_safetyvision.mp4) and [`report_safetyvision.json`](report_safetyvision.json):
-the six-clip [`ppe_demo_input.mp4`](../samples/ppe_demo_input.mp4) (~83 s), described in the main README.
+the six-clip [`ppe_demo_input.mp4`](../samples/ppe_demo_input.mp4) (~83 s), described in the main README. This is a single run over the whole compilation: 16 persons with `NO-Safety Vest`, 5 with `NO-Hardhat`, 3 with `NO-Goggles`. It is not the sum of the per-clip runs above (which gives 18 persons with `NO-Safety Vest`): re-identification runs over the whole video there, and the clip boundaries and tracker ids differ, so the person count differs.
 
 Reproduce one clip:
 
