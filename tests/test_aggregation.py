@@ -17,7 +17,7 @@ def test_counts_and_latest_crop() -> None:
     _feed(agg, 1, [["no-hardhat"], ["no-hardhat", "no-mask"], ["no-mask", "no-mask"]])
     rec = agg.records[1]
     assert rec.appearances == 3
-    assert rec.ppe_counts == {"no-hardhat": 2, "no-mask": 2}  # duplicates counted once
+    assert rec.infraction_counts == {"no-hardhat": 2, "no-mask": 2}  # duplicates counted once
     assert rec.latest_crop == "crop-1-2"
 
 
@@ -38,7 +38,7 @@ def test_min_ratio_filters_labels() -> None:
     _feed(agg, 7, frames)
     (report,) = agg.select_reports(min_appearances=3, min_ratio=0.10)
     assert report.infractions == ["no-hardhat", "no-gloves"]
-    assert report.ppe_counts == {"no-hardhat": 20, "no-gloves": 2}
+    assert report.infraction_counts == {"no-hardhat": 20, "no-gloves": 2}
     assert report.appearances == 20
     assert report.crop == "crop-7-19"
 
@@ -65,7 +65,7 @@ def test_update_many() -> None:
 
 
 def _as_tuples(reports: list) -> list:
-    return [(r.person_id, r.appearances, r.infractions, r.ppe_counts) for r in reports]
+    return [(r.person_id, r.appearances, r.infractions, r.infraction_counts) for r in reports]
 
 
 def test_label_filter_matches_processing_with_filter():

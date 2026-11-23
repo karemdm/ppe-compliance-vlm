@@ -219,7 +219,7 @@ detections. For each person id it keeps:
 
 - `appearances` — number of frames in which the person had **at least one**
   confirmed violation (other frames are not counted);
-- `ppe_counts[label]` — number of frames with that label;
+- `infraction_counts[label]` — number of frames with that label;
 - `latest_crop` — person crop from the most recent such frame (and, per
   label, the crop of the most recent frame with that label);
 - `track_ids` — tracker ids merged into the person (listed in the report).
@@ -228,7 +228,7 @@ After the video, a person is reported when
 
 ```
 appearances >= min_appearances            (default 3)
-ppe_counts[label] / appearances >= min_ratio   (default 0.10, per label)
+infraction_counts[label] / appearances >= min_ratio   (default 0.10, per label)
 ```
 
 and only the labels passing the ratio are listed. Because `appearances`

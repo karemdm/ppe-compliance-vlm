@@ -15,10 +15,10 @@ from ..config import VLMConfig
 
 logger = logging.getLogger(__name__)
 
-#: Instruction sent with the person crop; ``{ppes}`` is the list of flagged labels.
+#: Instruction sent with the person crop; ``{labels}`` is the list of flagged labels.
 PROMPT_TEXT = (
     "This is a cropped image of an industrial worker. The detection system flagged the "
-    "following missing PPE: {ppes}. Double-check the image and answer in one short "
+    "following missing PPE: {labels}. Double-check the image and answer in one short "
     "sentence whether you confirm the missing PPE or not."
 )
 
@@ -41,16 +41,16 @@ def clean_answer(text: str) -> str:
     return text
 
 
-def fallback_description(missing_ppes: Sequence[str]) -> str:
+def fallback_description(infractions: Sequence[str]) -> str:
     """Return the template sentence used when no VLM text is available.
 
     Args:
-        missing_ppes: Infraction labels.
+        infractions: Infraction labels.
 
     Returns:
         A one-sentence description.
     """
-    return f"Worker operating without the following mandatory safety items: {', '.join(missing_ppes)}."
+    return f"Worker operating without the following mandatory safety items: {', '.join(infractions)}."
 
 
 class VLMReporter:
@@ -107,11 +107,11 @@ class VLMReporter:
                 "check available memory and network access, or run with --no-vlm."
             ) from exc
 
-    def _build_prompt(self, ppes: str) -> str:
+    def _build_prompt(self, labels: str) -> str:
         """Build the text prompt, with the processor's chat template when it has one.
 
         Args:
-            ppes: Comma-separated infraction labels.
+            labels: Comma-separated infraction labels.
 
         Returns:
             The prompt string containing one image placeholder.
@@ -119,17 +119,17 @@ class VLMReporter:
         if getattr(self._processor, "chat_template", None):
             messages = [{"role": "user", "content": [
                 {"type": "image"},
-                {"type": "text", "text": PROMPT_TEXT.format(ppes=ppes)},
+                {"type": "text", "text": PROMPT_TEXT.format(labels=labels)},
             ]}]
             return self._processor.apply_chat_template(messages, add_generation_prompt=True)
-        return PROMPT_TEMPLATE.format(ppes=ppes)
+        return PROMPT_TEMPLATE.format(labels=labels)
 
-    def describe(self, crop_bgr: Any, missing_ppes: Sequence[str]) -> str:
+    def describe(self, crop_bgr: Any, infractions: Sequence[str]) -> str:
         """Generate a one-sentence description of a person's infractions.
 
         Args:
             crop_bgr: Person crop as a BGR image array.
-            missing_ppes: Infraction labels flagged by the detector.
+            infractions: Infraction labels flagged by the detector.
 
         Returns:
             The generated sentence, or :func:`fallback_description` if the
@@ -143,7 +143,7 @@ class VLMReporter:
 
         from ..ui.drawing import bgr_to_pil
 
-        prompt = self._build_prompt(", ".join(missing_ppes))
+        prompt = self._build_prompt(", ".join(infractions))
         inputs = self._processor(
             text=[prompt], images=[bgr_to_pil(crop_bgr)], padding=True, return_tensors="pt"
         )
@@ -166,5 +166,5 @@ class VLMReporter:
         generated = output[0][inputs["input_ids"].shape[1]:]
         text = clean_answer(self._processor.decode(generated, skip_special_tokens=True))
         if len(text) < 3:
-            return fallback_description(missing_ppes)
+            return fallback_description(infractions)
         return text

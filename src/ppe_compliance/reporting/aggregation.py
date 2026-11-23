@@ -17,14 +17,14 @@ class FrameInfraction:
 
     Attributes:
         person_id: Persistent person id (tracker id when re-ID is off).
-        missing_ppes: Confirmed infraction labels of the person.
+        labels: Confirmed infraction labels of the person.
         crop: Person crop (BGR image array); typed as ``Any`` to stay
             independent of numpy.
         track_id: Tracker id of the box, or ``None`` if unknown.
     """
 
     person_id: int
-    missing_ppes: List[str]
+    labels: List[str]
     crop: Any = None
     track_id: Optional[int] = None
 
@@ -35,7 +35,7 @@ class PersonRecord:
 
     Attributes:
         appearances: Number of frames with at least one associated infraction.
-        ppe_counts: Frames per infraction label, in first-seen order.
+        infraction_counts: Frames per infraction label, in first-seen order.
         latest_crop: Crop from the most recent frame with an infraction.
         label_sets: Number of frames per exact set of labels. It lets
             :meth:`PersonInfractionAggregator.select_reports` restrict the
@@ -46,7 +46,7 @@ class PersonRecord:
     """
 
     appearances: int = 0
-    ppe_counts: Dict[str, int] = field(default_factory=dict)
+    infraction_counts: Dict[str, int] = field(default_factory=dict)
     latest_crop: Any = None
     label_sets: Counter = field(default_factory=Counter)
     label_crops: Dict[str, Tuple[int, Any]] = field(default_factory=dict)
@@ -61,7 +61,7 @@ class PersonReport:
         person_id: Persistent person id.
         appearances: Frames with at least one infraction.
         infractions: Infraction labels that passed ``min_ratio``.
-        ppe_counts: Frame counts of the kept infraction labels.
+        infraction_counts: Frame counts of the kept infraction labels.
         crop: Latest person crop.
         track_ids: Tracker ids merged into this person by re-identification.
     """
@@ -69,7 +69,7 @@ class PersonReport:
     person_id: int
     appearances: int
     infractions: List[str]
-    ppe_counts: Dict[str, int]
+    infraction_counts: Dict[str, int]
     crop: Any = None
     track_ids: List[int] = field(default_factory=list)
 
@@ -89,7 +89,7 @@ class PersonInfractionAggregator:
     def update(self, item: FrameInfraction) -> None:
         """Add one frame-level infraction.
 
-        Each call counts as one appearance; every label in ``missing_ppes``
+        Each call counts as one appearance; every label in ``labels``
         is counted once.
 
         Args:
@@ -100,9 +100,9 @@ class PersonInfractionAggregator:
         record.latest_crop = item.crop
         if item.track_id is not None and item.track_id not in record.track_ids:
             record.track_ids.append(item.track_id)
-        labels = list(dict.fromkeys(item.missing_ppes))
+        labels = list(dict.fromkeys(item.labels))
         for label in labels:
-            record.ppe_counts[label] = record.ppe_counts.get(label, 0) + 1
+            record.infraction_counts[label] = record.infraction_counts.get(label, 0) + 1
             record.label_crops[label] = (record.appearances, item.crop)
         record.label_sets[frozenset(labels)] += 1
 
@@ -160,7 +160,7 @@ class PersonInfractionAggregator:
                     person_id=person_id,
                     appearances=appearances,
                     infractions=list(kept),
-                    ppe_counts=kept,
+                    infraction_counts=kept,
                     crop=crop,
                     track_ids=list(record.track_ids),
                 )
@@ -182,9 +182,9 @@ def _filtered_stats(
         the most recent frame with a wanted label (``None`` if there is none).
     """
     if wanted is None:
-        return record.appearances, dict(record.ppe_counts), record.latest_crop
+        return record.appearances, dict(record.infraction_counts), record.latest_crop
     appearances = sum(n for s, n in record.label_sets.items() if any(x.lower() in wanted for x in s))
-    counts = {label: c for label, c in record.ppe_counts.items() if label.lower() in wanted}
+    counts = {label: c for label, c in record.infraction_counts.items() if label.lower() in wanted}
     latest = [record.label_crops[label] for label in counts]
     crop = max(latest, key=lambda entry: entry[0])[1] if latest else None
     return appearances, counts, crop
