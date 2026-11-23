@@ -173,7 +173,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         return analyze_main(argv[1:])
     if argv and argv[0] == "app":
         argv = argv[1:]
-    build_app_parser().parse_args(argv)  # validate early, show --help
+    parser = build_app_parser()
+    args = parser.parse_args(argv)  # validate early, show --help
+    try:  # reject out-of-range values here instead of crashing inside the Streamlit subprocess
+        build_configs(args)
+        build_reid_config(args)
+    except ValueError as exc:
+        parser.error(str(exc))
     return launch_app(argv)
 
 
