@@ -83,7 +83,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         argv: Arguments without the program/subcommand name.
 
     Returns:
-        Process exit code.
+        Process exit code: 0 on success, 1 if the detector, the video or the
+        annotated output cannot be opened (argument errors exit with 2).
     """
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -99,7 +100,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     if not Path(args.input).is_file():
         parser.error(f"input video not found: {args.input}")
 
-    detector = PPEDetector(detector_cfg)
+    try:
+        detector = PPEDetector(detector_cfg)
+    except (OSError, ValueError) as exc:  # e.g. missing PPE weights or tracker file
+        logger.error("Cannot start the detector: %s", exc)
+        return 1
     aggregator = PersonInfractionAggregator()
     frames = 0
     tracks_seen: set = set()
@@ -117,6 +122,9 @@ def main(argv: Optional[List[str]] = None) -> int:
                 writer.write(step.annotated)
             if step.index % 100 == 0:
                 logger.info("Processed %d/%d frames", step.index, step.total)
+    except OSError as exc:  # unreadable / corrupt video or unwritable output video
+        logger.error("%s", exc)
+        return 1
     finally:
         if writer is not None:
             writer.release()
