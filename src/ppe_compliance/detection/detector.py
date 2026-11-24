@@ -38,7 +38,8 @@ class PPEDetector:
     """Tracks persons and associates PPE / infraction detections with them.
 
     Two models are used: a COCO YOLO model tracked with the configured
-    Ultralytics tracker (ByteTrack by default) for persons and one of the bundled PPE YOLO models (see :mod:`ppe_compliance.detection.models`).
+    Ultralytics tracker (ByteTrack by default) for persons, and one of the
+    bundled PPE YOLO models (see :mod:`ppe_compliance.detection.models`).
     """
 
     def __init__(self, config: Optional[DetectorConfig] = None) -> None:
@@ -129,14 +130,17 @@ class PPEDetector:
             frame: BGR frame.
             frame_number: 1-based frame index (used in the logs).
             target_infractions: Infraction labels to monitor; all infractions
-                supported by the PPE model when ``None``. Only these items are
-                observed.
+                supported by the PPE model when ``None`` (case-insensitive).
+                Only these items are observed.
 
         Returns:
             The annotated frame, one :class:`PersonDetection` per tracked
             person and log lines.
         """
-        targets = set(self._infraction_classes if target_infractions is None else target_infractions)
+        targets = set(
+            self._infraction_classes if target_infractions is None
+            else (str(t).lower() for t in target_infractions)
+        )
         items = [item for item in self._items if item.key in targets]
         annotated = frame.copy()
         logs = [f"--- Frame {frame_number} ---"]
