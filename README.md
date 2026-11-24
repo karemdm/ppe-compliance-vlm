@@ -297,7 +297,7 @@ VLM greedy decoding, `max_new_tokens=60`, `repetition_penalty=1.5`.
 ## Output
 
 **App:** annotated live feed (person boxes gray / green / red as described
-in *Temporal confirmation*), progress bar, rolling log (last 20 lines), the
+in *Temporal confirmation*), progress bar (a frame counter instead when the container reports no frame count), rolling log (last 20 lines), the
 metrics *Persons with infractions* and *Total consolidated infractions*
 (sum of kept labels over persons), and one report card per person with the
 latest crop, the kept infraction labels, the VLM text and, when re-ID merged

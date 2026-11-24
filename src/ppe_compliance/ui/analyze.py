@@ -121,7 +121,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                     writer = _open_writer(args.save_video, args.input, step.annotated)
                 writer.write(step.annotated)
             if step.index % 100 == 0:
-                logger.info("Processed %d/%d frames", step.index, step.total)
+                logger.info("Processed %d/%s frames", step.index, step.total or "?")
     except OSError as exc:  # unreadable / corrupt video or unwritable output video
         logger.error("%s", exc)
         return 1

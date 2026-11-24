@@ -28,7 +28,8 @@ class FrameStep:
 
     Attributes:
         index: 1-based frame index.
-        total: Total frame count reported by the container (at least 1).
+        total: Total frame count reported by the container, or 0 when the
+            container does not report one (progress is then indeterminate).
         annotated: Annotated BGR frame.
         infractions: Per-person *confirmed* infractions of this frame.
         persons: Confirmed status of every tracked person in this frame, in
@@ -49,6 +50,26 @@ class FrameStep:
     logs: List[str]
     person_ids: List[Optional[int]] = field(default_factory=list)
     reid_decisions: List[ReIDDecision] = field(default_factory=list)
+
+    @property
+    def progress(self) -> Optional[float]:
+        """Fraction of the video processed in ``[0, 1]``, or ``None`` if the total is unknown."""
+        return min(self.index / self.total, 1.0) if self.total > 0 else None
+
+
+def frame_count(cap: "cv2.VideoCapture") -> int:
+    """Return the frame count reported by an opened capture, or 0 if unknown.
+
+    Some containers and streams report 0, a negative number or NaN.
+
+    Args:
+        cap: Opened video capture.
+
+    Returns:
+        The frame count (>= 0).
+    """
+    count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+    return int(count) if count and count > 0 else 0  # NaN is truthy but not > 0
 
 
 def video_fps(cap: "cv2.VideoCapture") -> float:
@@ -113,7 +134,7 @@ def process_video(
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise IOError(f"Cannot open video: {video_path}")
-    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 1
+    total = frame_count(cap)
     fps = video_fps(cap)
     index = 0
     try:
@@ -169,7 +190,7 @@ def process_video(
                         infractions.append(FrameInfraction(person_id, status.confirmed_violations, crop,
                                                            track_id=det.track_id))
             compliance.prune(t)
-            yield FrameStep(index, max(total, index), annotated, infractions, statuses, logs,
+            yield FrameStep(index, max(total, index) if total else 0, annotated, infractions, statuses, logs,
                             person_ids, decisions)
     finally:
         cap.release()
