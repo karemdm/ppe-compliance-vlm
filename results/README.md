@@ -33,7 +33,8 @@ Reproduce one clip:
 
 ```bash
 python -m ppe_compliance analyze --input samples/construction_site.mp4 \
-    --output results/construction_site_report.json --save-video outputs/construction_site.mp4 \n    --vlm-model HuggingFaceTB/SmolVLM-500M-Instruct
+    --output results/construction_site_report.json --save-video outputs/construction_site.mp4 \
+    --vlm-model HuggingFaceTB/SmolVLM-500M-Instruct
 ```
 
 Counts are per person after re-identification; ids merged by appearance can still be wrong
