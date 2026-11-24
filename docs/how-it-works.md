@@ -283,7 +283,8 @@ tokens are decoded, and any `Assistant:` prefix is removed.
 Decoding is greedy (`do_sample=False`, `num_beams=1`), `max_new_tokens=60`,
 `repetition_penalty=1.5`. If the output is shorter than 3 characters, a
 template sentence is used instead. The model is loaded on first use (fp16 on
-CUDA, fp32 on CPU). With `--no-vlm`, the template sentence is always used.
+CUDA, fp32 on CPU) and, since the Streamlit app shares one reporter across
+browser sessions, loading and generation are serialized with a lock. With `--no-vlm`, the template sentence is always used.
 
 The prompt tells the model which labels were flagged, so the answer tends to
 agree with the detector; it is a description, not an independent check.

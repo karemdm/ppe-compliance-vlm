@@ -31,3 +31,41 @@ def test_prompt_fits_event_labels_and_is_not_ppe_only() -> None:
     assert "Fall-Detected, NO-Hardhat" in prompt
     assert "event" in prompt and "fall" in prompt
     assert "missing PPE" not in prompt  # would mislabel events as missing equipment
+
+
+def test_describe_is_serialized_and_releases_the_lock_on_error() -> None:
+    import threading
+
+    from ppe_compliance.reporting.vlm import VLMReporter
+
+    class Probe(VLMReporter):
+        active = 0
+        peak = 0
+        fail = False
+
+        def _describe_locked(self, crop_bgr, infractions):
+            type(self).active += 1
+            type(self).peak = max(type(self).peak, type(self).active)
+            try:
+                if type(self).fail:
+                    raise RuntimeError("boom")
+                threading.Event().wait(0.02)
+                return "ok"
+            finally:
+                type(self).active -= 1
+
+    reporter = Probe()
+    threads = [threading.Thread(target=reporter.describe, args=(None, ["NO-Hardhat"])) for _ in range(4)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert Probe.peak == 1  # never two at once
+
+    Probe.fail = True
+    try:
+        reporter.describe(None, [])
+    except RuntimeError:
+        pass
+    assert reporter._lock.acquire(blocking=False)  # released after the error
+    reporter._lock.release()
