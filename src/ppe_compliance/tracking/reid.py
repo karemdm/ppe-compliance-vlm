@@ -6,7 +6,8 @@ to persistent *person ids* by comparing appearance embeddings (any vectors of
 floats, see :mod:`ppe_compliance.tracking.appearance`) with a gallery of the persons
 seen before.
 
-A new track is *pending* for a short time while it collects embeddings. Then
+A new track is *pending* for a short time while it collects embeddings (a
+pending track that vanishes is pruned, see :meth:`ReIdentifier.prune_pending`). Then
 the mean embedding is compared with every gallery identity that could be the
 same person (an identity seen at the same time as the new track cannot be).
 The best identity is reused when its cosine similarity reaches ``threshold``
@@ -200,6 +201,7 @@ class Identity:
 @dataclass
 class _Pending:
     first_seen: float
+    last_update: float = 0.0
     samples: List[List[float]] = field(default_factory=list)
 
 
@@ -289,7 +291,9 @@ class ReIdentifier:
             self._observe(self._identities[person_id], t, embedding)
             return person_id, None
 
+        self.prune_pending(t)
         pending = self._pending.setdefault(track_id, _Pending(first_seen=t))
+        pending.last_update = t
         if embedding is not None:
             pending.samples.append(normalize(embedding))
         if len(pending.samples) < cfg.min_samples and t - pending.first_seen < cfg.max_pending_seconds:
@@ -297,6 +301,33 @@ class ReIdentifier:
         decision = self._decide(t, track_id, pending)
         del self._pending[track_id]
         return decision.person_id, decision
+
+    def prune_pending(self, t: float) -> int:
+        """Drop pending tracks that vanished before being decided.
+
+        A pending track is decided on its own updates, so one that disappears
+        (a short false track, an id switch) would stay in memory for the whole
+        video. A pending track not updated for ``max_pending_seconds`` is
+        removed without creating an identity. It is called by :meth:`update`.
+
+        Args:
+            t: Current time in seconds.
+
+        Returns:
+            The number of pending tracks removed.
+        """
+        stale = [
+            track_id for track_id, pending in self._pending.items()
+            if t - pending.last_update > self.config.max_pending_seconds
+        ]
+        for track_id in stale:
+            del self._pending[track_id]
+        return len(stale)
+
+    @property
+    def pending_count(self) -> int:
+        """Number of tracks currently waiting for a decision."""
+        return len(self._pending)
 
     def _decide(self, t: float, track_id: int, pending: _Pending) -> ReIDDecision:
         cfg = self.config
