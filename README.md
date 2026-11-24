@@ -404,6 +404,8 @@ those are not installed.
   body-region prior (hardhat on top, vest on the torso) is used yet.
 - The published `results/` were produced before the single-owner association
   and may differ when regenerated.
+- The Streamlit app processes one video at a time per PPE model (a lock guards the shared
+  tracking detector); a second browser session waits for the first.
 - The confirmed state lags the scene by up to `--confirm-seconds`.
 - The `safetyvision` author reports `NO-Safety Vest` as its weakest class and
   advises not to rely on it alone for vest compliance; `Mask` / `NO-Mask` are

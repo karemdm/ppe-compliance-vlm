@@ -5,6 +5,7 @@ Launch with ``ppe-compliance`` or ``streamlit run src/ppe_compliance/ui/app.py -
 
 import sys
 import tempfile
+import threading
 import time
 from dataclasses import replace
 from pathlib import Path
@@ -36,6 +37,16 @@ reid_cfg = build_reid_config(args)
 def load_detector(ppe_model: str) -> PPEDetector:
     """Load the detection models once per Streamlit server and PPE model."""
     return PPEDetector(replace(detector_cfg, ppe_model=ppe_model))
+
+
+@st.cache_resource
+def load_detector_lock(ppe_model: str) -> threading.Lock:
+    """Return the lock guarding the shared detector of a PPE model.
+
+    The detector holds mutable tracking state (track ids, tracker memory), so
+    two browser sessions must not process videos with it at the same time.
+    """
+    return threading.Lock()
 
 
 @st.cache_resource
@@ -123,29 +134,36 @@ if state.cache_key != key:  # new video, model, tracker or re-ID: invalidate cac
 if state.aggregator is None:
     with tempfile.NamedTemporaryFile(delete=False, suffix=Path(uploaded.name).suffix or ".mp4") as tmp:
         tmp.write(uploaded.getvalue())
-    detector.reset_tracking(tracker)
     aggregator = PersonInfractionAggregator()
-    recent_logs: list = []
-    last_ui = 0.0
-    status_text.info("Processing video...")
-    try:  # a Streamlit rerun interrupts this loop: always remove the temporary file
-        for step in process_video(detector, tmp.name, None, temporal_cfg, run_reid_cfg, embedder):
-            aggregator.update_many(step.infractions)
-            recent_logs = (recent_logs + step.logs)[-MAX_LOG_LINES:]
-            now = time.time()
-            if now - last_ui > UI_REFRESH_S or step.index == step.total:
-                frame_placeholder.image(bgr_to_rgb(step.annotated), channels="RGB", width="stretch")
-                if step.progress is None:  # unknown frame count: no percentage, just a counter
-                    status_text.info(f"Processing video... frame {step.index}")
-                else:
-                    progress_bar.progress(step.progress)
-                log_box.text_area("Live logs", "\n".join(recent_logs), height=250, label_visibility="collapsed")
-                last_ui = now
-    except IOError as exc:
-        status_text.error(str(exc))
-        st.stop()
+    detector_lock = load_detector_lock(ppe_model)
+    if not detector_lock.acquire(blocking=False):  # another session is using the shared detector
+        status_text.info("Waiting for another session to finish processing its video...")
+        detector_lock.acquire()
+    try:  # always release the lock (a Streamlit rerun interrupts the loop)
+        detector.reset_tracking(tracker)
+        recent_logs: list = []
+        last_ui = 0.0
+        status_text.info("Processing video...")
+        try:  # a Streamlit rerun interrupts this loop: always remove the temporary file
+            for step in process_video(detector, tmp.name, None, temporal_cfg, run_reid_cfg, embedder):
+                aggregator.update_many(step.infractions)
+                recent_logs = (recent_logs + step.logs)[-MAX_LOG_LINES:]
+                now = time.time()
+                if now - last_ui > UI_REFRESH_S or step.index == step.total:
+                    frame_placeholder.image(bgr_to_rgb(step.annotated), channels="RGB", width="stretch")
+                    if step.progress is None:  # unknown frame count: no percentage, just a counter
+                        status_text.info(f"Processing video... frame {step.index}")
+                    else:
+                        progress_bar.progress(step.progress)
+                    log_box.text_area("Live logs", "\n".join(recent_logs), height=250, label_visibility="collapsed")
+                    last_ui = now
+        except IOError as exc:
+            status_text.error(str(exc))
+            st.stop()
+        finally:
+            Path(tmp.name).unlink(missing_ok=True)
     finally:
-        Path(tmp.name).unlink(missing_ok=True)
+        detector_lock.release()
     progress_bar.progress(1.0)
     state.aggregator = aggregator
 

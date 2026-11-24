@@ -83,7 +83,9 @@ Two PPE models are bundled in `weights/` and registered in
 `src/ppe_compliance/detection/models.py` as `PPEModelSpec` entries (key, display name,
 weights path, source, license, `imgsz` and class mapping). The model is
 chosen with `--ppe-model {safetyvision,chd}` (default `safetyvision`) or in
-the Streamlit sidebar; the app keeps one loaded detector per model.
+the Streamlit sidebar; the app keeps one loaded detector per model. Its tracking state is shared, so a
+lock per model lets only one browser session process a video at a time; the
+others wait and see a message.
 
 The selected model runs on the full frame with `conf=0.15, iou=0.20` and the
 model's `imgsz` (896 for `safetyvision`, as recommended by its model card;
