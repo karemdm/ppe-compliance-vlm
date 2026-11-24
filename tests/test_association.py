@@ -45,3 +45,28 @@ def test_match_infractions_collects_labels() -> None:
     ]
     assert match_infractions(PERSON, infractions) == {"no-hardhat", "no-safety vest"}
     assert match_infractions(PERSON, []) == set()
+
+
+def test_best_matches_keeps_highest_confidence_per_lower_case_label() -> None:
+    from ppe_compliance.detection.association import best_matches
+
+    detections = [
+        {"box": [130, 100, 170, 140], "label": "Hardhat", "conf": 0.4},
+        {"box": [130, 100, 170, 140], "label": "HARDHAT", "conf": 0.7},
+        {"box": [110, 200, 190, 300], "label": "NO-Safety Vest", "conf": 0.3},
+        {"box": [500, 500, 550, 550], "label": "NO-Gloves", "conf": 0.9},  # not associated
+    ]
+    assert best_matches(PERSON, detections) == {"hardhat": 0.7, "no-safety vest": 0.3}
+    assert best_matches(PERSON, []) == {}
+    assert best_matches(PERSON, detections, threshold=1.0) == {"hardhat": 0.7, "no-safety vest": 0.3}
+
+
+def test_zero_threshold_still_needs_real_overlap() -> None:
+    assert not boxes_overlap([0, 0, 10, 10], [10, 0, 20, 10], threshold=0.0)
+    assert boxes_overlap([0, 0, 10, 10], [9, 9, 20, 20], threshold=0.0)
+
+
+def test_box_partly_inside_person_uses_small_box_area() -> None:
+    # a helmet box sticking out of the top of the person: half of it inside
+    helmet = [130, 70, 170, 130]  # 40 x 60, rows 100..130 inside -> 40*30 / 2400 = 0.5
+    assert abs(overlap_ratio(helmet, PERSON) - 0.5) < 1e-9
