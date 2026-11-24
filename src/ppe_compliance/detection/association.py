@@ -1,9 +1,13 @@
 """Association of PPE / infraction boxes with person boxes (standard library only).
 
+Each PPE or infraction box belongs to at most one person: the one it overlaps
+best (:func:`assign_to_persons`). :func:`best_matches` then summarizes the
+boxes owned by one person.
+
 Boxes are ``(x1, y1, x2, y2)`` sequences in pixel coordinates.
 """
 
-from typing import Dict, Iterable, Mapping, Sequence, Set
+from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set
 
 from .models import MonitoredItem
 from ..tracking.temporal import Observation, resolve_observation
@@ -61,6 +65,75 @@ def boxes_overlap(box1: Box, box2: Box, threshold: float = 0.05) -> bool:
     return ratio > 0.0 and ratio >= threshold
 
 
+def intersection_area(box1: Box, box2: Box) -> float:
+    """Return the intersection area of two boxes (0 if they do not overlap).
+
+    Args:
+        box1: First box.
+        box2: Second box.
+
+    Returns:
+        The intersection area in pixels.
+    """
+    inter_w = min(box1[2], box2[2]) - max(box1[0], box2[0])
+    inter_h = min(box1[3], box2[3]) - max(box1[1], box2[1])
+    return inter_w * inter_h if inter_w > 0 and inter_h > 0 else 0.0
+
+
+def owner_index(
+    box: Box,
+    person_boxes: Sequence[Box],
+    threshold: float = 0.05,
+) -> Optional[int]:
+    """Find the single person a PPE / infraction box belongs to.
+
+    The owner is the person with the highest :func:`overlap_ratio`, provided it
+    is at least ``threshold``. Ties are broken deterministically: larger
+    intersection area first, then lower person index.
+
+    Args:
+        box: PPE or infraction box.
+        person_boxes: Person boxes, in a stable order.
+        threshold: Minimum :func:`overlap_ratio` to have an owner.
+
+    Returns:
+        Index into ``person_boxes``, or ``None`` if no person overlaps enough.
+    """
+    best: Optional[int] = None
+    best_key = None
+    for idx, person in enumerate(person_boxes):
+        if not boxes_overlap(box, person, threshold):
+            continue
+        key = (overlap_ratio(box, person), intersection_area(box, person))
+        if best_key is None or key > best_key:  # strict: lower index wins ties
+            best, best_key = idx, key
+    return best
+
+
+def assign_to_persons(
+    person_boxes: Sequence[Box],
+    detections: Iterable[Mapping[str, object]],
+    threshold: float = 0.05,
+) -> List[List[Mapping[str, object]]]:
+    """Give each detection to exactly one person (or to nobody).
+
+    Args:
+        person_boxes: Person boxes, in a stable order.
+        detections: Items with a ``"box"`` key (worn and missing classes alike).
+        threshold: Minimum :func:`overlap_ratio` to be assigned.
+
+    Returns:
+        One list of detections per person, aligned with ``person_boxes``.
+        Every detection appears in at most one list.
+    """
+    owned: List[List[Mapping[str, object]]] = [[] for _ in person_boxes]
+    for det in detections:
+        idx = owner_index(det["box"], person_boxes, threshold)  # type: ignore[arg-type]
+        if idx is not None:
+            owned[idx].append(det)
+    return owned
+
+
 def match_infractions(
     person_box: Box,
     infractions: Iterable[Mapping[str, object]],
@@ -89,6 +162,10 @@ def best_matches(
     threshold: float = 0.05,
 ) -> Dict[str, float]:
     """Return the highest confidence per lower-case label among associated boxes.
+
+    This is the per-person overlap test only. To avoid counting a box for
+    several people, first split the detections with :func:`assign_to_persons`
+    and call this on each person's own list.
 
     Args:
         person_box: Person bounding box.
