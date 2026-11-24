@@ -68,18 +68,20 @@ Full video: [`results/demo_vlm_doublecheck.mp4`](results/demo_vlm_doublecheck.mp
 
 ```mermaid
 flowchart TD
-    A["Video frame"] --> B["Person YOLO (yolov8n)<br/>+ ByteTrack"]
-    A --> C["PPE YOLO<br/>(safetyvision or chd)"]
-    B --> D["Person boxes + track IDs<br/>→ re-ID: persistent person IDs"]
-    C --> E["PPE / infraction boxes"]
-    D --> F["Association:<br/>intersection / min area ≥ 0.05"]
-    E --> F
-    F --> T["Temporal confirmation per person and item:<br/>3 s window, ≥ 60% majority of worn / not-worn frames"]
+    A["Video frame<br/>time t = (index - 1) / fps"] --> B["Person YOLO (yolov8n) + tracker<br/>person boxes + tracker ids"]
+    A --> C["PPE YOLO (safetyvision or chd)<br/>positive and infraction boxes"]
+    B --> F["Association per person box:<br/>intersection / min area ≥ 0.05<br/>→ worn, not worn or unknown per item"]
+    C --> F
+    A --> R
+    B --> R["Re-ID: crop embedding, gallery match<br/>tracker id → person id<br/>(new track pending ≤ 0.5 s: gray, not counted)"]
+    F --> T["Temporal confirmation per person id and item:<br/>3 s window, ≥ 60% majority of worn / not-worn frames"]
+    R --> T
     T --> G["Annotated frame + log<br/>(gray checking, green OK, red confirmed)"]
     T --> H["Per-person aggregator (confirmed violations)<br/>appearances, counts, latest crop"]
-    H -- end of video --> I{"Appearances ≥ 3 and<br/>infraction ratio ≥ 0.10?"}
-    I -- yes --> J["Idefics2-8b:<br/>one-sentence report per person"]
+    H -- end of video --> I{"Appearances ≥ 3 and<br/>label ratio ≥ 0.10?"}
+    I -- yes --> J["VLM (Idefics2-8b by default):<br/>one sentence per person from crop + labels<br/>(template sentence with --no-vlm)"]
     I -- no --> K["Not reported"]
+    J --> L["Report cards (app) or JSON (analyze)"]
 ```
 
 Details, formulas and tuning tips: [docs/how-it-works.md](docs/how-it-works.md).
@@ -254,7 +256,9 @@ python -m ppe_compliance analyze --input samples/ppe_demo_input.mp4 --output out
 ```
 
 `--infractions` is validated against the selected model; for example
-`--ppe-model chd --infractions no-gloves` is rejected.
+`--ppe-model chd --infractions no-gloves` is rejected. Exit codes: `0` success, `1` the
+detector or the video could not be opened, `2` invalid arguments (out-of-range values such as
+`--min-majority 0.4` are also rejected by `ppe-compliance` itself before the app starts).
 
 Run `ppe-compliance --help` and `ppe-compliance analyze --help` for all options.
 
@@ -262,7 +266,7 @@ Run `ppe-compliance --help` and `ppe-compliance analyze --help` for all options.
 
 | Name | Default | Description |
 |------|---------|-------------|
-| `--person-weights` | `weights/yolov8n.pt` | Person model; falls back to the Ultralytics auto-download by file name |
+| `--person-weights` | `weights/yolov8n.pt` | Person model; looked up in the current directory, then the repository root, then falls back to the Ultralytics auto-download by file name |
 | `--person-conf` | `0.45` | Confidence threshold for person detections; raise it if non-persons are detected |
 | `--ppe-conf` | `0.15` | Confidence threshold for PPE / infraction detections (low on purpose; the temporal rule filters noise) |
 | `--tracker` | `bytetrack.yaml` | Tracker name or YAML (e.g. `configs/bytetrack_custom.yaml`, `configs/botsort_reid.yaml`); also in the sidebar |
@@ -308,7 +312,8 @@ several tracker ids into the person, the list of those ids to check.
   "monitored_infractions": ["no-hardhat", "..."],
   "settings": {"ppe_model": "safetyvision", "tracker": "bytetrack.yaml", "min_appearances": 3, "min_ratio": 0.1,
                "ppe_conf": 0.15,
-               "temporal": {"window_seconds": 3.0, "min_majority": 0.6, "min_coverage": 0.3, "lost_seconds": 2.0},
+               "temporal": {"window_seconds": 3.0, "min_majority": 0.6, "min_coverage": 0.3, "lost_seconds": 2.0,
+                           "min_frames": 5},
                "reid": {"enabled": true, "embedder": "histogram", "threshold": 0.85, "...": "..."}},
   "reid_summary": {"tracks_assigned": 9, "tracks_reidentified": 3, "persons": 6},
   "persons_with_infractions": 1,
@@ -365,13 +370,14 @@ ppe-compliance-vlm/
   scripts/make_demo_video.py  # renders the demo video with VLM double-check freezes
   samples/          # input clips + README (sources, licenses)
   results/          # example outputs (annotated videos, JSON reports) + README
-  tests/            # tests for the pure-logic modules
+  tests/            # synthetic-data tests (no model weights, no inference)
   weights/          # yolov8n.pt, safetyvision_v2_yolov8s.pt, chd_yolo26l.pt + README
 ```
 
-Run the tests with `pytest`. They need only the package's light dependencies;
-heavy ones such as `torch` and `transformers` are imported lazily and are not
-required by the unit tests.
+Run the tests with `pytest`. They use synthetic data and stubbed models: no weights are loaded
+and no inference runs. `torch` and `transformers` are imported lazily and are not needed; the
+tests of the pipeline, detector and `analyze` need OpenCV and Ultralytics and are skipped when
+those are not installed.
 
 ## Limitations
 
@@ -420,7 +426,7 @@ this project is defined in `src/ppe_compliance/detection/models.py`.
 
 | | `safetyvision` (default) | `chd` |
 |---|---|---|
-| File | `weights/safetyvision_v2_yolov8s.pt` (22 MB) | `weights/chd_yolo26l.pt` (51 MB) |
+| File | `weights/safetyvision_v2_yolov8s.pt` (22.5 MB) | `weights/chd_yolo26l.pt` (53 MB) |
 | Architecture | YOLOv8s | YOLO26-L |
 | Inference `imgsz` | 896 | 640 |
 | PPE pairs (worn / missing) | Hardhat / NO-Hardhat, Safety Vest / NO-Safety Vest, Gloves / NO-Gloves, Goggles / NO-Goggles, Mask / NO-Mask, – / No_Harness | Hardhat / NO-Hardhat, Safety Vest / NO-Safety Vest, Mask / NO-Mask |
