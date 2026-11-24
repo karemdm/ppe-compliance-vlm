@@ -135,7 +135,10 @@ if state.aggregator is None:
             now = time.time()
             if now - last_ui > UI_REFRESH_S or step.index == step.total:
                 frame_placeholder.image(bgr_to_rgb(step.annotated), channels="RGB", width="stretch")
-                progress_bar.progress(min(step.index / step.total, 1.0))
+                if step.progress is None:  # unknown frame count: no percentage, just a counter
+                    status_text.info(f"Processing video... frame {step.index}")
+                else:
+                    progress_bar.progress(step.progress)
                 log_box.text_area("Live logs", "\n".join(recent_logs), height=250, label_visibility="collapsed")
                 last_ui = now
     except IOError as exc:

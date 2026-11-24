@@ -140,3 +140,31 @@ def test_capture_is_released_when_the_consumer_stops_early(tmp_path, monkeypatch
     next(gen)
     gen.close()
     assert released == [True]
+
+
+class _NoCountCapture:
+    """Wraps a real capture but reports no frame count."""
+
+    def __init__(self, real) -> None:
+        self._real = real
+
+    def get(self, prop):
+        return 0.0 if prop == cv2.CAP_PROP_FRAME_COUNT else self._real.get(prop)
+
+    def __getattr__(self, name):
+        return getattr(self._real, name)
+
+
+def test_unknown_frame_count_gives_indeterminate_progress(tmp_path, monkeypatch) -> None:
+    video = make_video(tmp_path / "v.avi", 4)
+    real = cv2.VideoCapture
+    monkeypatch.setattr(pipeline.cv2, "VideoCapture", lambda path: _NoCountCapture(real(path)))
+    steps = list(pipeline.process_video(FakeDetector(lambda n: []), video, None, FAST, NO_REID))
+    assert [s.index for s in steps] == [1, 2, 3, 4]
+    assert all(s.total == 0 and s.progress is None for s in steps)
+
+
+def test_known_frame_count_gives_progress(tmp_path) -> None:
+    video = make_video(tmp_path / "v.avi", 4)
+    steps = list(pipeline.process_video(FakeDetector(lambda n: []), video, None, FAST, NO_REID))
+    assert [s.progress for s in steps] == [0.25, 0.5, 0.75, 1.0]
