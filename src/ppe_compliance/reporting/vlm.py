@@ -9,6 +9,7 @@ otherwise an Idefics2-style ``User: <image> ...`` prompt is used.
 """
 
 import logging
+import threading
 from typing import Any, Optional, Sequence
 
 from ..config import VLMConfig
@@ -56,7 +57,11 @@ def fallback_description(infractions: Sequence[str]) -> str:
 
 
 class VLMReporter:
-    """Describes a person crop and its flagged infractions in one sentence."""
+    """Describes a person crop and its flagged infractions in one sentence.
+
+    Thread-safe: :meth:`load` and :meth:`describe` are serialized with a lock,
+    so one instance can be shared by several Streamlit sessions.
+    """
 
     def __init__(self, config: Optional[VLMConfig] = None) -> None:
         """Store the configuration; the model is not loaded yet.
@@ -68,6 +73,9 @@ class VLMReporter:
         self._processor: Any = None
         self._model: Any = None
         self._device = "cpu"
+        # The Streamlit app shares one reporter across browser sessions: loading
+        # and generation run one at a time (released by ``with`` on any error).
+        self._lock = threading.RLock()
 
     @property
     def loaded(self) -> bool:
@@ -80,6 +88,10 @@ class VLMReporter:
         Raises:
             RuntimeError: If the dependencies or the model cannot be loaded.
         """
+        with self._lock:
+            self._load_locked()
+
+    def _load_locked(self) -> None:
         if self.loaded:
             return
         try:
@@ -140,6 +152,10 @@ class VLMReporter:
         Raises:
             RuntimeError: If the model cannot be loaded.
         """
+        with self._lock:
+            return self._describe_locked(crop_bgr, infractions)
+
+    def _describe_locked(self, crop_bgr: Any, infractions: Sequence[str]) -> str:
         self.load()
         import torch
 

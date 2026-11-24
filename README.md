@@ -405,7 +405,7 @@ those are not installed.
 - The published `results/` were produced before the single-owner association
   and may differ when regenerated.
 - The Streamlit app processes one video at a time per PPE model (a lock guards the shared
-  tracking detector); a second browser session waits for the first.
+  tracking detector, and the shared VLM reporter runs one description at a time); a second browser session waits for the first.
 - The confirmed state lags the scene by up to `--confirm-seconds`.
 - The `safetyvision` author reports `NO-Safety Vest` as its weakest class and
   advises not to rely on it alone for vest compliance; `Mask` / `NO-Mask` are
