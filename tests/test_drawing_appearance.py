@@ -83,3 +83,18 @@ def test_histogram_embedder_tiny_and_none_crops() -> None:
 
 def test_build_embedder_histogram_is_case_insensitive() -> None:
     assert isinstance(build_embedder("Histogram"), HistogramEmbedder)
+
+
+def test_crop_box_padding_and_min_size_are_clipped_to_the_frame() -> None:
+    frame = np.zeros((100, 200, 3), dtype=np.uint8)
+    # 10 % padding on a 40 x 20 box: +4 px per side horizontally, +2 vertically
+    assert crop_box(frame, [50, 40, 90, 60], padding=0.1).shape == (24, 48, 3)
+    # a tiny box is grown around its center to the minimum size
+    assert crop_box(frame, [100, 50, 110, 60], min_size=32).shape == (32, 32, 3)
+    # clipped at the frame border: may stay smaller than min_size
+    assert crop_box(frame, [0, 0, 10, 10], min_size=32).shape == (21, 21, 3)
+    # padding never rescues an empty / inverted box
+    assert crop_box(frame, [50, 50, 50, 90], padding=0.5, min_size=32).size == 0
+    assert crop_box(frame, [60, 60, 20, 20], padding=0.5, min_size=32).size == 0
+    # defaults keep the old behavior
+    assert crop_box(frame, [10, 20, 50, 60]).shape == (40, 40, 3)

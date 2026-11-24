@@ -67,7 +67,7 @@ def test_confirmed_violation_and_frame_times(tmp_path) -> None:
     assert first.index == 6
     assert first.persons[0].state is ItemState.VIOLATION
     assert first.infractions[0].labels == ["NO-Hardhat"] and first.infractions[0].person_id == 5
-    assert first.infractions[0].crop.shape == (40, 36, 3)  # box (4,4,40,44) clipped to the frame
+    assert first.infractions[0].crop.shape == (48, 54, 3)  # padded by 10 %, grown to 64 px, clipped to the frame
     assert all(s.persons[0].state is ItemState.UNKNOWN for s in steps[:5])
     assert steps[-1].annotated.shape == (48, 64, 3)
 

@@ -232,7 +232,8 @@ detections. For each person id it keeps:
 - `appearances` — number of frames in which the person had **at least one**
   confirmed violation (other frames are not counted);
 - `infraction_counts[label]` — number of frames with that label;
-- `latest_crop` — person crop from the most recent such frame (and, per
+- `latest_crop` — person crop (box grown by 10 % per side and to at least
+  64 px per side, clipped to the frame) from the most recent such frame (and, per
   label, the crop of the most recent frame with that label);
 - `track_ids` — tracker ids merged into the person (listed in the report).
 
