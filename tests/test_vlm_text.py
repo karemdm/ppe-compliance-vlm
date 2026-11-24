@@ -24,3 +24,10 @@ def test_prompt_template_wraps_prompt_text() -> None:
 
 def test_fallback_description_lists_items() -> None:
     assert "NO-Hardhat, NO-Mask" in fallback_description(["NO-Hardhat", "NO-Mask"])
+
+
+def test_prompt_fits_event_labels_and_is_not_ppe_only() -> None:
+    prompt = PROMPT_TEXT.format(labels="Fall-Detected, NO-Hardhat")
+    assert "Fall-Detected, NO-Hardhat" in prompt
+    assert "event" in prompt and "fall" in prompt
+    assert "missing PPE" not in prompt  # would mislabel events as missing equipment

@@ -15,11 +15,13 @@ from ..config import VLMConfig
 
 logger = logging.getLogger(__name__)
 
-#: Instruction sent with the person crop; ``{labels}`` is the list of flagged labels.
+#: Instruction sent with the person crop; ``{labels}`` is the list of flagged labels
+#: (missing-PPE classes and event classes such as ``Fall-Detected``).
 PROMPT_TEXT = (
     "This is a cropped image of an industrial worker. The detection system flagged the "
-    "following missing PPE: {labels}. Double-check the image and answer in one short "
-    "sentence whether you confirm the missing PPE or not."
+    "following safety issues (missing protective equipment or a safety event such as a "
+    "fall): {labels}. Double-check the image and answer in one short sentence whether "
+    "you confirm them or not."
 )
 
 #: Idefics2-style prompt used when the processor has no chat template.
