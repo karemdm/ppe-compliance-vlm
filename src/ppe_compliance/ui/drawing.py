@@ -76,20 +76,43 @@ def draw_pending_person(frame: np.ndarray, box: Sequence[int], track_id: int) ->
     draw_labeled_box(frame, box, f"track {track_id} re-id...", GRAY, font_scale=0.5, thickness=1)
 
 
-def crop_box(frame: np.ndarray, box: Sequence[int]) -> np.ndarray:
-    """Crop a box from a frame, clipped to the image bounds.
+def crop_box(
+    frame: np.ndarray,
+    box: Sequence[int],
+    padding: float = 0.0,
+    min_size: int = 0,
+) -> np.ndarray:
+    """Crop a box from a frame, optionally padded and enlarged, clipped to the image.
+
+    The box is first grown by ``padding`` of its width and height on every
+    side, then grown around its center to at least ``min_size`` pixels per
+    side, and finally clipped to the image bounds (so a crop at the border can
+    stay smaller than ``min_size``). An empty or inverted box stays empty.
 
     Args:
         frame: BGR image.
         box: ``(x1, y1, x2, y2)``.
+        padding: Extra margin as a fraction of the box size per side.
+        min_size: Minimum width and height in pixels before clipping.
 
     Returns:
         A copy of the cropped region (may be empty).
     """
     h, w = frame.shape[:2]
-    x1, y1 = max(0, int(box[0])), max(0, int(box[1]))
-    x2, y2 = min(w, int(box[2])), min(h, int(box[3]))
-    return frame[y1:y2, x1:x2].copy()
+    x1, y1, x2, y2 = (int(v) for v in box)
+    if x2 <= x1 or y2 <= y1:
+        return frame[0:0, 0:0].copy()
+    if padding > 0:
+        pad_x, pad_y = int(round((x2 - x1) * padding)), int(round((y2 - y1) * padding))
+        x1, x2, y1, y2 = x1 - pad_x, x2 + pad_x, y1 - pad_y, y2 + pad_y
+    if min_size > 0:
+        if x2 - x1 < min_size:
+            cx = (x1 + x2) // 2
+            x1, x2 = cx - min_size // 2, cx - min_size // 2 + min_size
+        if y2 - y1 < min_size:
+            cy = (y1 + y2) // 2
+            y1, y2 = cy - min_size // 2, cy - min_size // 2 + min_size
+    return frame[max(0, y1):min(h, y2), max(0, x1):min(w, x2)].copy()
 
 
 def bgr_to_rgb(image: np.ndarray) -> np.ndarray:

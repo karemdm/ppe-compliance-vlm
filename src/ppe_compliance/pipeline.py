@@ -16,6 +16,11 @@ from .tracking.temporal import ItemState, PersonComplianceTracker, PersonStatus,
 #: Frame rate assumed when the container does not report one.
 DEFAULT_FPS = 30.0
 
+#: Margin added around the person box of the report / VLM crop (fraction per side).
+REPORT_CROP_PADDING = 0.10
+#: Minimum side in pixels of the report / VLM crop (before clipping to the frame).
+REPORT_CROP_MIN_SIZE = 64
+
 
 @dataclass
 class FrameStep:
@@ -159,7 +164,7 @@ def process_video(
                 if status.confirmed_violations:
                     logs.append(f"Person #{person_id} (track {det.track_id}) confirmed "
                                 f"{status.confirmed_violations}")
-                    crop = crop_box(frame, det.box)
+                    crop = crop_box(frame, det.box, REPORT_CROP_PADDING, REPORT_CROP_MIN_SIZE)
                     if crop.size > 0:
                         infractions.append(FrameInfraction(person_id, status.confirmed_violations, crop,
                                                            track_id=det.track_id))
