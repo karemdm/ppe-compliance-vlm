@@ -263,9 +263,13 @@ For each reported person, the latest crop and the kept labels are sent to
 
 ```
 This is a cropped image of an industrial worker. The detection system flagged
-the following missing PPE: {labels}. Double-check the image and answer in one
-short sentence whether you confirm the missing PPE or not.
+the following safety issues (missing protective equipment or a safety event
+such as a fall): {labels}. Double-check the image and answer in one short
+sentence whether you confirm them or not.
 ```
+
+The wording covers every infraction type, including event classes such as
+`Fall-Detected`, which is not missing PPE.
 
 If the processor has a chat template, the prompt is built with
 `apply_chat_template` from one user message holding the image and this text,
