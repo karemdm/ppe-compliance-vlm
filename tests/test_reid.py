@@ -143,3 +143,22 @@ def test_aggregator_merges_tracks_of_one_person() -> None:
     assert report.person_id == 1
     assert report.track_ids == [3, 8]
     assert report.appearances == 5
+
+
+def test_pending_track_that_vanishes_is_pruned() -> None:
+    reid = ReIdentifier(CFG)
+    reid.update(0.0, 7, RED_SHIRT)  # pending, then the track disappears
+    assert reid.pending_count == 1
+    reid.update(0.4, 8, RED_SHIRT)  # still within max_pending_seconds of track 7
+    assert reid.pending_count == 2
+    reid.update(2.0, 9, RED_SHIRT)  # tracks 7 and 8 vanished long ago
+    assert reid.pending_count == 1
+    assert reid.identities == {}  # pruning never creates an identity
+
+
+def test_prune_pending_returns_count_and_keeps_active_tracks() -> None:
+    reid = ReIdentifier(CFG)
+    reid.update(0.0, 1, RED_SHIRT)
+    reid.update(0.3, 2, RED_SHIRT)
+    assert reid.prune_pending(0.6) == 1  # track 1 last seen 0.6 s ago
+    assert reid.pending_count == 1

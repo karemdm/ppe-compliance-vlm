@@ -52,7 +52,9 @@ the gallery. Embedders (`--reid-embedder`):
 
 **Matching.** A new tracker id is *pending* until it has `min_samples = 3`
 embeddings or `0.5 s` have passed (drawn thin gray, `track N re-id...`, not
-fed to the temporal rule). Let `q` be the normalized mean of its embeddings
+fed to the temporal rule). A pending track that is not seen for `0.5 s`
+before being decided is dropped without creating a person (it would otherwise
+stay in memory for the whole video). Let `q` be the normalized mean of its embeddings
 and `g(p)` the normalized mean of the gallery of person `p`. Candidates are
 the persons whose last frame is **before** the first frame of the new track
 (a person visible at the same time is someone else) and, if
