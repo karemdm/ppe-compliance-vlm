@@ -5,18 +5,20 @@ plays, and a consolidation + description phase after the last frame.
 
 ```mermaid
 flowchart TD
-    A["Video frame"] --> B["Person YOLO (yolov8n)<br/>+ ByteTrack"]
-    A --> C["PPE YOLO<br/>(safetyvision or chd)"]
-    B --> D["Person boxes + track IDs<br/>→ re-ID: persistent person IDs"]
-    C --> E["PPE / infraction boxes"]
-    D --> F["Association:<br/>intersection / min area ≥ 0.05"]
-    E --> F
-    F --> T["Temporal confirmation per person and item:<br/>3 s window, ≥ 60% majority of worn / not-worn frames"]
+    A["Video frame<br/>time t = (index - 1) / fps"] --> B["Person YOLO (yolov8n) + tracker<br/>person boxes + tracker ids"]
+    A --> C["PPE YOLO (safetyvision or chd)<br/>positive and infraction boxes"]
+    B --> F["Association per person box:<br/>intersection / min area ≥ 0.05<br/>→ worn, not worn or unknown per item"]
+    C --> F
+    A --> R
+    B --> R["Re-ID: crop embedding, gallery match<br/>tracker id → person id<br/>(new track pending ≤ 0.5 s: gray, not counted)"]
+    F --> T["Temporal confirmation per person id and item:<br/>3 s window, ≥ 60% majority of worn / not-worn frames"]
+    R --> T
     T --> G["Annotated frame + log<br/>(gray checking, green OK, red confirmed)"]
     T --> H["Per-person aggregator (confirmed violations)<br/>appearances, counts, latest crop"]
-    H -- end of video --> I{"Appearances ≥ 3 and<br/>infraction ratio ≥ 0.10?"}
-    I -- yes --> J["Idefics2-8b:<br/>one-sentence report per person"]
+    H -- end of video --> I{"Appearances ≥ 3 and<br/>label ratio ≥ 0.10?"}
+    I -- yes --> J["VLM (Idefics2-8b by default):<br/>one sentence per person from crop + labels<br/>(template sentence with --no-vlm)"]
     I -- no --> K["Not reported"]
+    J --> L["Report cards (app) or JSON (analyze)"]
 ```
 
 ## 1. Person tracking
@@ -236,7 +238,8 @@ infraction_counts[label] / appearances >= min_ratio   (default 0.10, per label)
 and only the labels passing the ratio are listed. Because `appearances`
 counts only confirmed-violation frames, the ratio measures how often a label
 is confirmed among those frames, not among all frames the person is visible.
-Flicker is already removed by the temporal rule, so with the defaults these
+With a single confirmed label the ratio is always 1.0, so `min_ratio` only matters
+when a person has several labels. Flicker is already removed by the temporal rule, so with the defaults these
 thresholds mostly drop tracks that were confirmed for only a few frames
 before being lost.
 
