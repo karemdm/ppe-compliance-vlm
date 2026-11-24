@@ -34,6 +34,8 @@ class DetectorConfig:
         person_weights: Path to the person detection weights (COCO YOLO).
         person_conf: Confidence threshold for person detections.
         person_iou: NMS IoU threshold for person detections.
+            Higher keeps more overlapping boxes; 0.20 suppressed neighbouring
+            workers in crowds.
         person_classes: COCO class ids tracked as persons.
         tracker: Ultralytics tracker name or path to a tracker YAML.
         ppe_model: Key of the bundled PPE model (see ``models.PPE_MODELS``).
@@ -46,12 +48,12 @@ class DetectorConfig:
 
     person_weights: str = "weights/yolov8n.pt"
     person_conf: float = 0.45
-    person_iou: float = 0.20
+    person_iou: float = 0.45
     person_classes: Tuple[int, ...] = (0,)
     tracker: str = "bytetrack.yaml"
     ppe_model: str = DEFAULT_PPE_MODEL
     ppe_conf: float = 0.15
-    ppe_iou: float = 0.20
+    ppe_iou: float = 0.45
     overlap_threshold: float = 0.05
 
 

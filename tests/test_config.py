@@ -5,8 +5,8 @@ from ppe_compliance.config import DetectorConfig, ReportConfig, resolve_tracker
 
 def test_defaults() -> None:
     d, r = DetectorConfig(), ReportConfig()
-    assert (d.person_conf, d.person_iou, d.person_classes) == (0.45, 0.20, (0,))
-    assert (d.ppe_conf, d.ppe_iou, d.overlap_threshold) == (0.15, 0.20, 0.05)
+    assert (d.person_conf, d.person_iou, d.person_classes) == (0.45, 0.45, (0,))
+    assert (d.ppe_conf, d.ppe_iou, d.overlap_threshold) == (0.15, 0.45, 0.05)
     assert d.tracker == "bytetrack.yaml"
     assert d.person_weights == "weights/yolov8n.pt"
     assert d.ppe_model == "safetyvision"

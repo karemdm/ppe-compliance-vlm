@@ -21,7 +21,7 @@ flowchart TD
 
 ## 1. Person tracking
 
-`yolov8n.pt` (default `--person-weights`) runs with `track(..., classes=[0], conf=0.45, iou=0.20,
+`yolov8n.pt` (default `--person-weights`) runs with `track(..., classes=[0], conf=0.45, iou=0.45,
 tracker="bytetrack.yaml", persist=True)`. `persist=True` keeps the tracker
 state between frames so ids are stable. The tracker is reset when a new video
 (or new settings) is processed, so ids start again for each video. Frames in
@@ -81,7 +81,7 @@ weights path, source, license, `imgsz` and class mapping). The model is
 chosen with `--ppe-model {safetyvision,chd}` (default `safetyvision`) or in
 the Streamlit sidebar; the app keeps one loaded detector per model.
 
-The selected model runs on the full frame with `conf=0.15, iou=0.20` and the
+The selected model runs on the full frame with `conf=0.15, iou=0.45` and the
 model's `imgsz` (896 for `safetyvision`, as recommended by its model card;
 640 for `chd`, the size used on its model card). The confidence is low on
 purpose: isolated low-confidence boxes are filtered by the temporal rule

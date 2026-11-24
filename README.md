@@ -286,7 +286,7 @@ Run `ppe-compliance --help` and `ppe-compliance analyze --help` for all options.
 | `--save-video` (analyze) | off | Also write the annotated video (mp4v, input FPS and size) to this path |
 
 Other fixed defaults in `src/ppe_compliance/config.py`: person
-`iou=0.20`, class `0`; PPE `iou=0.20`, `imgsz` from the model
+`iou=0.45`, class `0`; PPE `iou=0.45`, `imgsz` from the model
 registry (896 for safetyvision, 640 for chd); overlap threshold `0.05`;
 VLM greedy decoding, `max_new_tokens=60`, `repetition_penalty=1.5`.
 
