@@ -7,7 +7,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 import numpy as np
 from ultralytics import YOLO
 
-from .association import best_matches, observe_items
+from .association import assign_to_persons, best_matches, observe_items
 from ..config import DetectorConfig, resolve_tracker, resolve_weights
 from ..ui.drawing import GREEN, RED, draw_labeled_box
 from .models import get_model_spec, resolve_model_weights, unmatched_class_names
@@ -121,6 +121,9 @@ class PPEDetector:
     ) -> Tuple[np.ndarray, List[PersonDetection], List[str]]:
         """Run tracking, PPE detection and association on one frame.
 
+        Each PPE / infraction box is assigned to the single person it overlaps
+        best (see :func:`association.assign_to_persons`).
+
         Positive PPE boxes are drawn in green and monitored infraction boxes in
         red (thin lines). Person boxes are not drawn here: their color depends
         on the temporal rule applied by :func:`pipeline.process_video`.
@@ -157,8 +160,9 @@ class PPEDetector:
         logs.append(f"Tracked persons: {len(persons)} | Raw infractions: {n_infractions}")
 
         detections: List[PersonDetection] = []
-        for box, person_id in persons:
-            matches = best_matches(box, relevant, self.config.overlap_threshold)
+        owned = assign_to_persons([box for box, _ in persons], relevant, self.config.overlap_threshold)
+        for (box, person_id), own in zip(persons, owned):
+            matches = best_matches(box, own, self.config.overlap_threshold)
             observations = observe_items(matches, items)
             raw = [i.label for i in items if observations[i.key] is Observation.NOT_WORN]
             if raw:

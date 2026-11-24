@@ -47,7 +47,7 @@ Full video: [`results/demo_vlm_doublecheck.mp4`](results/demo_vlm_doublecheck.mp
 - Selectable infractions (safetyvision): no-hardhat, no-safety vest,
   no-gloves, no-goggles, no-mask, no_harness, fall-detected
   (chd: no-hardhat, no-safety vest, no-mask).
-- Overlap-based association of PPE and infraction boxes with persons.
+- Overlap-based association of PPE and infraction boxes with persons (each box goes to the single person it overlaps best).
 - Temporal confirmation (hysteresis) per person and item: a sliding-window
   majority vote filters flickering and single-frame noise.
 - Live annotated feed (person gray while checking, green when OK, red with
@@ -70,7 +70,7 @@ Full video: [`results/demo_vlm_doublecheck.mp4`](results/demo_vlm_doublecheck.mp
 flowchart TD
     A["Video frame<br/>time t = (index - 1) / fps"] --> B["Person YOLO (yolov8n) + tracker<br/>person boxes + tracker ids"]
     A --> C["PPE YOLO (safetyvision or chd)<br/>positive and infraction boxes"]
-    B --> F["Association per person box:<br/>intersection / min area ≥ 0.05<br/>→ worn, not worn or unknown per item"]
+    B --> F["Each PPE box → the one person it overlaps best:<br/>intersection / min area ≥ 0.05<br/>→ worn, not worn or unknown per item"]
     C --> F
     A --> R
     B --> R["Re-ID: crop embedding, gallery match<br/>tracker id → person id<br/>(new track pending ≤ 0.5 s: gray, not counted)"]
@@ -399,8 +399,11 @@ those are not installed.
   `NO-Goggles` on every frame) is confirmed like a real one; the temporal
   rule only removes short, inconsistent noise. The low `ppe_conf` (0.15)
   lets more of these through.
-- The association threshold is low, so a PPE box of a nearby person can
-  count for the wrong person in crowded scenes.
+- Each PPE box is assigned to the single person it overlaps best, but in very
+  crowded scenes the best-overlapping person can still be the wrong one. No
+  body-region prior (hardhat on top, vest on the torso) is used yet.
+- The published `results/` were produced before the single-owner association
+  and may differ when regenerated.
 - The confirmed state lags the scene by up to `--confirm-seconds`.
 - The `safetyvision` author reports `NO-Safety Vest` as its weakest class and
   advises not to rely on it alone for vest compliance; `Mask` / `NO-Mask` are

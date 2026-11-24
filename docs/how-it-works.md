@@ -134,8 +134,16 @@ ratio = area(I ∩ P) / min(area(I), area(P)) >= 0.05
 
 Dividing by the smaller area (instead of the union, as IoU does) gives 1.0
 when a small box lies fully inside the person box. The threshold is
-deliberately low, so a box near overlapping persons can be assigned to more
-than one of them. Both positive (e.g. `Hardhat`) and negative (e.g.
+deliberately low, but each box is assigned to a **single** person: the one with
+the highest ratio. Ties are broken by the larger intersection area, then by the
+lower person index (order of the tracked persons in the frame). A box whose best
+ratio is below the threshold belongs to nobody. A helmet or vest between two
+overlapping workers therefore counts for only one of them.
+
+A body-region prior (hardhat near the top of the person box, vest in the
+torso band) was considered and left as future work: it needs per-class
+geometry and would reject legitimate boxes of people who are crouching or
+partly occluded. Both positive (e.g. `Hardhat`) and negative (e.g.
 `NO-Hardhat`) boxes are associated; for each person and item the result is
 one observation per frame (section 4).
 
